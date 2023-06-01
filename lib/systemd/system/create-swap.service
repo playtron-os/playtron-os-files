@@ -1,0 +1,15 @@
+[Unit]
+Description=Create a swap file on first boot.
+After=local-fs.target
+Wants=local-fs.target
+After=resize-root-file-system.service
+Wants=resize-root-file-system.service
+
+[Service]
+Type=oneshot
+TimeoutSec=infinity
+ExecStart=/sbin/create-swap.sh
+ExecStart=/bin/systemctl --no-reload disable %n
+
+[Install]
+WantedBy=multi-user.target
