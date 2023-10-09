@@ -20,4 +20,4 @@ Swap creation:
 
 ## License
 
-[Apache License Version 2.0](LICENSE).
+[GNU General Public License v3.0](LICENSE).
