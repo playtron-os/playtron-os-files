@@ -5,8 +5,21 @@ set -x
 
 # Calculate the ideal swap size.
 # There should be 32 GB of temporary file system size (RAM and swap combined).
-# First, we fnd the RAM size in GB by converting from KB.
+# First, we find the RAM size in GB by converting from KB.
 ram_gb=$(expr $(cat /proc/meminfo | grep MemTotal | awk {'print $2'}) / 1000000)
+root_size=$(df -h | grep -P '\/sysroot$' | awk '{print $4}')
+# If the available space on the root file system is in gigabytes (not terabytes), we need to make sure there is enough space.
+# zram is enabled and used by default on Fedora which will help in low space situations.
+if echo ${root_size} | grep -P 'G$'; then
+    if [ $(echo ${root_size} | cut -d. -f1 | grep -o -P "[0-9]+") -lt 32 ]; then
+        echo "Not creating swap. Less than 32 GB of space available."
+        exit 0
+    fi
+fi
+if echo ${root_size} | grep -P 'M$'; then
+    echo "Not creating swap. Less than 1 GB of space available."
+    exit 0
+fi
 swap_gb=$(expr 32 - $ram_gb)
 # Check to see if swap_gb variable is a zero or negative number (meaning there is more than 32 GB of RAM).
 echo $swap_gb | grep -q -P "^[\-|0]"
