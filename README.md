@@ -2,6 +2,11 @@
 
 ## Files
 
+Partitioning:
+
+- ./sbin/drive-format.sh
+    - A script to (1) check if a drive is in-use and (2) format it.
+
 Resize root file system:
 
 - ./lib/systemd/system/resize-root-file-system.service
