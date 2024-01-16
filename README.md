@@ -5,7 +5,7 @@
 Partitioning:
 
 - ./sbin/drive-format.sh
-    - A script to (1) check if a drive is in-use and (2) format it.
+    - A script to format a drive to have a single ext4 partition with case folding.
 
 Resize root file system:
 
