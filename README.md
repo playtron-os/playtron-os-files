@@ -2,6 +2,11 @@
 
 ## Files
 
+Hardware control:
+
+- ./bin/hwctl
+    - A Bash script to manage audio, battery, display, storage, and system information.
+
 Resize root file system:
 
 - ./lib/systemd/system/resize-root-file-system.service
