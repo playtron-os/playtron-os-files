@@ -1,0 +1,337 @@
+#! /bin/bash
+
+function system-info {
+
+	if [ -z "$DISPLAY" ]; then
+		export DISPLAY=:0
+	fi
+
+
+	# Basic hardware
+	MANUFACTURER=$(cat /sys/devices/virtual/dmi/id/board_vendor)
+	MODEL=$(cat /sys/devices/virtual/dmi/id/board_name)
+	FORM_FACTOR=$(hostnamectl chassis)
+	if [ -z "${FORM_FACTOR}" ]; then
+		FORM_FACTOR="unknown"
+	fi
+
+	# CPU
+	cat /proc/cpuinfo > /tmp/cpuinfo.txt
+	CPU_VENDOR=$(grep 'vendor_id' /tmp/cpuinfo.txt | head -n1 | cut -d':' -f2 | sed 's/^ //')
+	CPU_NAME=$(grep 'model name' /tmp/cpuinfo.txt | head -n1 | cut -d':' -f2 | sed 's/^ //')
+	CPU_PHYSICAL=$(grep 'cpu cores' /tmp/cpuinfo.txt | head -n1 | cut -d':' -f2 | tr -d ' ')
+	CPU_SPEED="$(lscpu | grep 'CPU max MHz' | cut -d':' -f2 | tr -d ' ' | cut -d'.' -f1)"
+
+	# Memory
+	TOTAL_RAM=$(grep MemTotal /proc/meminfo | tr -s ' ' | cut -d' ' -f2)
+	TOTAL_RAM=$((TOTAL_RAM / 1024))
+	FREE_RAM=$(grep MemFree /proc/meminfo | tr -s ' ' | cut -d' ' -f2)
+	FREE_RAM=$((FREE_RAM / 1024))
+	AVAIL_RAM=$(grep MemAvailable /proc/meminfo | tr -s ' ' | cut -d' ' -f2)
+	AVAIL_RAM=$((AVAIL_RAM / 1024))
+
+	# GPU
+	glxinfo > /tmp/glxinfo.txt
+	GPU_NAME=$(grep 'OpenGL renderer string:' /tmp/glxinfo.txt | cut -d':' -f2 | sed 's/^ //' | sed 's/ (/\n/' | head -1)
+	VRAM=$(grep "Dedicated video memory:" /tmp/glxinfo.txt | cut -d':' -f2 | sed 's/^ *//' | tr -d ' MB')
+
+	# Operating system
+	source /etc/os-release
+	OS_NAME=$NAME
+	OS_VERSION=$VERSION_ID
+
+	# Playtron package versions
+	AUTOTEST_VERSION=$(rpm -qa | grep autotest | cut -c10- | sed 's/.[a-z].*//')
+	PLAYSERVE_VERSION=$(rpm -qa | grep playserve | cut -c11- | sed 's/.[a-z].*//')
+	PLAYTRON_APP_VERSION=$(rpm -qa | grep playtron-app | cut -c14- | sed 's/.[a-z].*//')
+	PLAYTRON_LABS_VERSION=$(rpm -qa | grep playtron-labs | cut -c15- | sed 's/.[a-z].*//')
+
+	# Storage devices
+	PRIMARY_DISK_TOTAL=$(df -h --output='size' --block-size M /home | tail -n1 | tr -d ' M')
+	PRIMARY_DISK_FREE=$(df -h --output='avail' --block-size M /home | tail -n1 | tr -d ' M')
+	secondary_storage_devices=$(df --block-size=M --output=size,avail,target | grep /run/media | \
+	grep -v "/run/media/fedora_fedora." | \
+	grep -v "/run/media/var." | \
+	grep -v "/run/media/rootfs." | \
+	grep -v "/run/media/esp." | tr -s " ")
+
+
+	# output json
+	echo "{
+	\"vendor\": \"$MANUFACTURER\",
+	\"model\": \"$MODEL\",
+	\"formFactor\": \"$FORM_FACTOR\",
+	\"cpuVendor\": \"$CPU_VENDOR\",
+	\"cpuName\": \"$CPU_NAME\",
+	\"cpuNumCores\": $CPU_PHYSICAL,
+	\"cpuSpeedMHZ\": $CPU_SPEED,
+	\"ramTotalMB\": $TOTAL_RAM,
+	\"gpuName\": \"$GPU_NAME\",
+	\"vramMB\": $VRAM,
+	\"osName\": \"$OS_NAME\",
+	\"osVersion\": \"$OS_VERSION\",
+	\"autotestVersion\": \"$AUTOTEST_VERSION\",
+	\"playserveVersion\": \"$PLAYSERVE_VERSION\",
+	\"playtronAppVersion\": \"$PLAYTRON_APP_VERSION\",
+	\"playtronLabsVersion\": \"$PLAYTRON_LABS_VERSION\",
+	\"storageDevices\": [
+		{
+			\"totalMB\": $PRIMARY_DISK_TOTAL,
+			\"primary\": true"
+	if [ -n "$secondary_storage_devices" ]; then
+		while IFS= read -r line; do
+		        total=$(echo "$line" | cut -d' ' -f2 | tr -d 'M')
+		        free=$(echo "$line" | cut -d' ' -f3 | tr -d 'M')
+		        echo "		},
+		{
+			\"totalMB\": $total,
+			\"primary\": false"
+		done <<< "$secondary_storage_devices"
+	fi
+
+	echo "\
+		}
+	]
+}"
+
+}
+
+function storage {
+
+	function days_since {
+		target_date=$1
+
+		# validate date value
+		if ! date -d $target_date &> /dev/null; then
+			echo 999999 # return a large value to avoid need for error handling by caller
+			return 0
+		fi
+
+		today=$(date --iso)
+		days=$(( ($(date -d "$today UTC" +%s) - $(date -d "$target_date UTC" +%s) )/(60*60*24) ))
+
+		echo $days
+	}
+
+	function ensure_mbs {
+		speed=$1
+		if echo $speed | grep 'kB/s' > /dev/null; then
+			speed=$(echo $speed | tr -d 'kB/s')
+			speed=$(echo "scale=1; $speed / 1024" | bc)
+		else
+			speed=$(echo $speed | tr -d 'MB/s')
+		fi
+		echo $speed
+	}
+
+	function run_benchmark {
+		operation=$1
+		filename=$2
+		speed=$(fio \
+			--name ${operation}_benchmark \
+			--filename=$filename \
+			--rw=$operation \
+			--size=20m \
+			--io_size=10g \
+			--blocksize=1024k \
+			--ioengine=libaio \
+			--fsync=10000 \
+			--iodepth=32 \
+			--direct=1 \
+			--numjobs=1 \
+			--runtime=5 | \
+			grep --ignore-case "${operation}:" | cut -d'(' -f2 | cut -d')' -f1)
+
+		echo $(ensure_mbs $speed)
+	}
+
+	function is_float {
+		num=$1
+		if [[ "$num" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+			return 0
+		fi
+
+		return 1
+	}
+
+	function run_format {
+		device_to_format=$1
+		# Unmounting first allows the new partition to be mountable immediately after being formatted.
+		echo "INFO: Unmounting partitions by name"
+		for d in $(ls -1 ${device_to_format}*)
+			do echo "INFO: Unmounting ${d}"
+			umount ${d} 2> /dev/null
+		done
+		echo "INFO: Clearing the existing partition table and first partition metadata"
+		dd if=/dev/zero of=$device_to_format bs=1M count=10 conv=sync 2> /dev/null
+		echo "INFO: Creating a new GPT partition table"
+		parted --script $device_to_format mklabel gpt
+		echo "INFO: Creating a partition using all available space"
+		# By specifying "ext4", the file system code is saved to the partition table but `parted` does not actually format the file system.
+		parted --script $device_to_format mkpart primary ext4 2048s 100%
+		echo "INFO: Formatting the partition to ext4 with case folding support"
+		partition_to_format=$(fdisk -l $device_to_format | grep -A 1 Device | tail -n 1 | awk '{print $1}')
+		if ! mkfs.ext4 -O casefold ${partition_to_format} &> /dev/null
+			then echo "ERROR: Failed to format ${partition_to_format} to ext4"
+			exit 1
+		else
+			echo "INFO: Successfully formatted ${partition_to_format} to ext4"
+		fi
+		echo "INFO: Reloading system partition information"
+		partprobe 2> /dev/null
+	}
+
+	cmd=$1
+	shift
+	args=$@
+	case $cmd in
+		"benchmark")
+			TEMP_FILE=.fio-tempfile.dat
+			RESULTS_FILE=.playtron-storage-benchmark-results.json
+
+			if ! command -v fio > /dev/null; then
+				echo "ERROR: Missing dependency \`fio\`"
+				exit 1
+			fi
+
+			if [ ! -d "$args" ]; then
+				echo "The specified path ($args) does not exist or is not a directory"
+				exit 1
+			fi
+
+			# make the device path the current working directory
+			pushd "$args" > /dev/null
+
+			# skip benchmark if an existing results file indicates a benchmark has been run less than 30 days ago
+			if [ -f $RESULTS_FILE ]; then
+				bench_date=$(cat $RESULTS_FILE | grep "date" | cut -d':' -f2 | tr -d '", ')
+
+				days=$(days_since $bench_date)
+				if [ $days -lt 30 ]; then
+					echo "Benchmark ran $days day(s) ago, skipping benchmark"
+					exit 0
+				fi
+			fi
+
+			write_speed=$(run_benchmark "write" $TEMP_FILE)
+			read_speed=$(run_benchmark "read" $TEMP_FILE)
+			rm $TEMP_FILE
+
+			if ! is_float $write_speed || ! is_float $read_speed; then
+				echo "ERROR: Failed to run benchmark"
+				exit 1
+			fi
+
+			# output results summary
+			echo "Read speed: $read_speed MB/s"
+			echo "Write speed: $write_speed MB/s"
+
+			# write results json file to device path
+			echo "{" > $RESULTS_FILE
+			echo "    \"date\": \"$(date --iso)\"," >> $RESULTS_FILE
+			echo "    \"readSpeedMBS\": $read_speed," >> $RESULTS_FILE
+			echo "    \"writeSpeedMBS\": $write_speed" >> $RESULTS_FILE
+			echo "}" >> $RESULTS_FILE
+
+			# return to original working directory
+			popd > /dev/null
+			;;
+		"format")
+			if echo $args | grep -q -P "^\/dev\/"
+				then run_format $args
+			else
+				echo "ERROR: please provide a valid /dev/\${DEVICE}"
+				exit 1
+			fi
+			;;
+		*)
+			echo "Error: unknown command"
+			exit 1
+			;;
+	esac
+}
+
+function audio {
+	case $1 in
+		"raise-volume")
+			wpctl set-volume --limit 1.0 @DEFAULT_AUDIO_SINK@ 5%+
+			;;
+		"lower-volume")
+			wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-
+			;;
+		"get-volume")
+			float=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | cut -d: -f2)
+			echo "scale=0; $float * 100 / 1" | bc
+			;;
+		"set-volume")
+			if [ "$2" -ge 0 ] 2>/dev/null && [ "$2" -le 100 ] 2>/dev/null; then
+				wpctl set-volume --limit 1.0 @DEFAULT_AUDIO_SINK@ ${2}%
+			else
+				echo "ERROR: value must be between 0 and 100"
+				exit 1
+			fi
+			;;
+		"toggle-mute")
+			wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle
+			;;
+		*)
+			echo "Error: unknown command"
+			;;
+	esac
+}
+
+function display {
+	case $1 in
+		"raise-brightness")
+			brightnessctl --class=backlight set +5% > /dev/null
+			;;
+		"lower-brightness")
+			brightnessctl --class=backlight set 5%- > /dev/null
+			;;
+		"get-brightness")
+			cur=$(brightnessctl --class=backlight get)
+			max=$(brightnessctl --class=backlight max)
+			if [[ -n "$cur" && -n "$max" ]]; then
+				echo $((100 * $cur / $max))
+			fi
+			;;
+		"set-brightness")
+			if [ "$2" -ge 0 ] 2>/dev/null && [ "$2" -le 100 ] 2>/dev/null; then
+				brightnessctl --class=backlight set ${2}% > /dev/null
+			else
+				echo "ERROR: value must be between 0 and 100"
+				exit 1
+			fi
+			;;
+		*)
+			echo "Error: unknown command"
+			;;
+	esac
+}
+
+function system-battery {
+	case $1 in
+		"get-charging-status")
+			if [ "$(cat /sys/class/power_supply/BAT1/status)" == "Charging" ] ; then
+				echo 1
+			else
+				echo 0
+			fi
+			;;
+		"get-charge-level")
+			cat /sys/class/power_supply/BAT1/capacity
+			;;
+		*)
+			echo "Error: unknown command"
+			;;
+	esac
+}
+
+SUBSYSTEM=$1
+shift
+
+if [[ "$SUBSYSTEM" == @(audio|display|system-battery|system-info|storage) ]]; then
+	$SUBSYSTEM $@
+else
+	echo "Error: unknown subsystem $SUBSYSTEM"
+fi
