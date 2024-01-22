@@ -8,7 +8,7 @@ Wants=resize-root-file-system.service
 [Service]
 Type=oneshot
 TimeoutSec=infinity
-ExecStart=/sbin/create-swap.sh
+ExecStart=/bin/create-swap.sh
 ExecStart=/bin/systemctl --no-reload disable %n
 
 [Install]
