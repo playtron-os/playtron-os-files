@@ -194,7 +194,7 @@ function storage {
 				exit 1
 			fi
 
-			mounted_path=$(df -h --output=source,target | grep "${args}\(\s\|$\)" | tr -s ' ' | cut -d' ' -f2-)
+			mounted_path=$(df -h --output=source,target | grep "${args}\(\s\|$\)" | tail -n 1 | tr -s ' ' | cut -d' ' -f2-)
 
 			if [ ! -d "$mounted_path" ]; then
 				echo "${args}: Not a valid partition or mounted partition path"
