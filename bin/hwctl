@@ -194,13 +194,24 @@ function storage {
 				exit 1
 			fi
 
-			if [ ! -d "$args" ]; then
-				echo "The specified path ($args) does not exist or is not a directory"
+			if [ -z $args ]; then
+				echo "Please specify a valid partition or mounted partition path"
+				exit 1
+			fi
+
+			args_clean=$args
+			if [ "$args" != "/" ]; then
+				args_clean=$(echo $args | sed 's,/$,,') # drop trailing '/' for better matching
+			fi
+			mounted_path=$(df -h --output=source,target | grep "${args_clean}\(\s\|$\)" | tail -n 1 | tr -s ' ' | cut -d' ' -f2-)
+
+			if [ ! -d "$mounted_path" ]; then
+				echo "${args}: Not a valid partition or mounted partition path"
 				exit 1
 			fi
 
 			# make the device path the current working directory
-			pushd "$args" > /dev/null
+			pushd "$mounted_path" > /dev/null
 
 			# skip benchmark if an existing results file indicates a benchmark has been run less than 30 days ago
 			if [ -f $RESULTS_FILE ]; then
