@@ -23,6 +23,13 @@ Swap creation:
 - ./usr/bin/create-swap.sh
     - A script to create swap if the RAM size is less than 32 GB.
 
+Factory reset:
+
+- ./usr/bin/playtron-factory-reset
+    - A script to factory reset the system
+- ./usr/share/polkit-1/rules.d/50-one.playtron.factory-reset.rules
+    - A PolicyKit rule to allow the user to run the factory reset script as root
+
 Configuration:
 
 - ./etc/gai.conf
@@ -40,6 +47,12 @@ Configuration:
     - Autologin to playtron session
 - ./usr/share/polkit-1/rules.d/50-one.playtron.rpmostree1.rules
     - Allow running OS upgrades without a password
+
+Device tweaks:
+
+- ./usr/lib/udev/rules.d/50-lenovo-legion-controller.rules
+    - Fixes controller on Legion Go
+
 
 ## License
 
