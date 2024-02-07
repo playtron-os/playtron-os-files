@@ -46,6 +46,12 @@ Configuration:
 - ./usr/share/polkit-1/rules.d/50-one.playtron.rpmostree1.rules
     - Allow running OS upgrades without a password
 
+Device tweaks:
+
+- ./usr/lib/udev/rules.d/50-lenovo-legion-controller.rules
+    - Fixes controller on Legion Go
+
+
 ## License
 
 [GNU General Public License v3.0](LICENSE).
