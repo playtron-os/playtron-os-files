@@ -30,6 +30,8 @@ Configuration:
     - See: https://github.com/ValveSoftware/steam-for-linux/issues/3372
 - ./etc/xdg/weston/weston.ini
     - Default dev session configuration
+- ./usr/lib/systemd/logind.conf.d/00-playtron-power.conf
+    - Configure the power button
 - ./usr/lib/systemd/system-preset/50-playtron.preset
     - Enable default system services
 - ./usr/lib/systemd/user-preset/50-playtron.preset
