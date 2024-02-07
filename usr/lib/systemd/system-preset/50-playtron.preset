@@ -1,3 +1,4 @@
 enable lightdm.service
 enable create-swap.service
 enable resize-root-file-system.service
+disable firewalld.service

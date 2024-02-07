@@ -1,0 +1,61 @@
+#! /bin/bash
+
+if [ $EUID -ne 0 ]; then
+        echo "$(basename $0) must be run as root"
+        exit 1
+fi
+
+if [ "$1" == "--preserve-user-files" ]; then
+	PRESERVE_HOME=1
+fi
+
+shopt -s extglob
+
+function reset_etc {
+	dir=$1
+	if [ -z "$dir" ]; then
+		return 1
+	fi
+
+	rm -rf /etc/$dir/{,.}*
+
+	if [ -n "$(ls -A /usr/etc/$dir)" ]; then
+		# there are files to copy
+		rsync -aHX /usr/etc/$dir/* /etc/$dir
+	fi
+}
+
+# clear all package changes
+rpm-ostree reset &> /dev/null
+
+# TODO: reset all of /etc
+# reset some key files in /etc
+reset_etc NetworkManager
+reset_etc systemd
+reset_etc lightdm
+reset_etc ssh
+reset_etc xdg
+reset_etc sudoers.d
+rsync -aHX /usr/etc/sudoers /etc/sudoers
+rsync -aHX /usr/etc/gai.conf /etc/gai.conf
+
+# reset playtron password
+echo 'playtron:playtron' | chpasswd
+
+# clean /var, keep "home"
+rm -rf /var/!("home")
+rm -rf /var/.*
+
+# delete swap file and any added users or files in /home, keep "playtron"
+swapoff -a
+rm -rf /home/!("playtron")
+rm -rf /home/.*
+
+if [ -z "$PRESERVE_HOME" ]; then
+	# delete home directory contents
+	rm -rf /home/playtron/{,.}*
+fi
+
+echo "Factory reset complete, rebooting..."
+
+systemctl reboot
