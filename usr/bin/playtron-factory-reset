@@ -35,8 +35,6 @@ reset_etc systemd
 reset_etc lightdm
 reset_etc ssh
 reset_etc xdg
-reset_etc sudoers.d
-rsync -aHX /usr/etc/sudoers /etc/sudoers
 rsync -aHX /usr/etc/gai.conf /etc/gai.conf
 
 # reset playtron password
