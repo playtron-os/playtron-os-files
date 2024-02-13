@@ -41,10 +41,10 @@ function system-info {
 	OS_VERSION=$VERSION_ID
 
 	# Playtron package versions
-	AUTOTEST_VERSION=$(rpm -qa | grep autotest | cut -c10- | sed 's/.[a-z].*//')
-	PLAYSERVE_VERSION=$(rpm -qa | grep playserve | cut -c11- | sed 's/.[a-z].*//')
-	GRID_VERSION=$(rpm -qa | grep grid | cut -c6- | sed 's/.[a-z].*//')
-	PLAYTRON_LABS_VERSION=$(rpm -qa | grep playtron-labs | cut -c15- | sed 's/.[a-z].*//')
+	AUTOTEST_VERSION=$(rpm -qa | grep "^autotest-" | cut -c10- | sed 's/.[a-z].*//')
+	PLAYSERVE_VERSION=$(rpm -qa | grep "^playserve-" | cut -c11- | sed 's/.[a-z].*//')
+	GRID_VERSION=$(rpm -qa | grep "^grid-" | cut -c6- | sed 's/.[a-z].*//')
+	PLAYTRON_LABS_VERSION=$(rpm -qa | grep "^playtron-labs-" | cut -c15- | sed 's/.[a-z].*//')
 
 	# Storage devices
 	PRIMARY_DISK_TOTAL=$(df -h --output='size' --block-size M /home | tail -n1 | tr -d ' M')
