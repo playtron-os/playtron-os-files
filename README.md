@@ -23,6 +23,16 @@ Swap creation:
 - ./usr/bin/create-swap.sh
     - A script to create swap if the RAM size is less than 32 GB.
 
+IPv6 support:
+
+- ./etc/gai.conf
+    - Deprioritize IPv6 to address Steam client issues where it is hard-coded to use IPv4
+    - See: https://github.com/ValveSoftware/steam-for-linux/issues/3372
+- ./usr/bin/clatd-ipv6-check
+    - Check if only IPv6 is used (no IPv4) and then start clatd for 464XLAT support
+- ./usr/lib/systemd/system/clatd-ipv6-check.service
+    - A systemd service file to run the `clatd-ipv6-check` script
+
 Factory reset:
 
 - ./usr/bin/playtron-factory-reset
@@ -32,9 +42,6 @@ Factory reset:
 
 Configuration:
 
-- ./etc/gai.conf
-    - Deprioritize IPv6 to address Steam client issues where it is hard-coded to use IPv4
-    - See: https://github.com/ValveSoftware/steam-for-linux/issues/3372
 - ./etc/xdg/weston/weston.ini
     - Default dev session configuration
 - ./usr/lib/systemd/logind.conf.d/00-playtron-power.conf
