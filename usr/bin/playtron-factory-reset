@@ -6,7 +6,7 @@ if [ $EUID -ne 0 ]; then
 fi
 
 if [ "$1" == "--preserve-user-files" ]; then
-	PRESERVE_HOME=1
+	PRESERVE_USER_FILES=1
 fi
 
 shopt -s extglob
@@ -27,6 +27,9 @@ function reset_etc {
 
 # clear all package changes
 rpm-ostree reset &> /dev/null
+
+# backup network settings for potential restoration later (they are considered user files)
+rsync -aHX /etc/NetworkManager /tmp/
 
 # TODO: reset all of /etc
 # reset some key files in /etc
@@ -49,8 +52,11 @@ swapoff -a
 rm -rf /home/!("playtron")
 rm -rf /home/.*
 
-if [ -z "$PRESERVE_HOME" ]; then
-	# delete home directory contents
+if [ -n "$PRESERVE_USER_FILES" ]; then
+	# preserving user files, restore network settings
+	rsync -aHX /tmp/NetworkManager /etc/
+else
+	# not preserving user files, delete home directory contents
 	rm -rf /home/playtron/{,.}*
 fi
 
