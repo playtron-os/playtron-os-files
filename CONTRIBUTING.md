@@ -7,7 +7,7 @@
     - Use a “main” branch instead of a “master” branch.
     - Use “blocklist” and “allowlist” instead of “blacklist” and “whitelist”.
     - Use “primary” and “secondary” instead of “master” and “slave”.
-- Use [GitHub Issues](https://github.com/playtron-os/playtron-os-scripts/issues) to report bugs, security issues, or to open new feature requests.
+- Use [GitHub Issues](https://github.com/playtron-os/playtron-os-files/issues) to report bugs, security issues, or to open new feature requests.
 
 # Contributing
 
@@ -16,11 +16,11 @@ There are three main ways to contribute:
 - Testing.
     - The simplest way you can help contribute is to test out our project. Have new ideas or ran into issues? Open up a GitHub Issue with details to let us know.
 - Documentation.
-    - Help add new [documentation](https://github.com/playtron-os/playtron-os-scripts/issues?q=is%3Aopen+is%3Aissue+label%3Adocumentation) or reorganize existing documentation.
+    - Help add new [documentation](https://github.com/playtron-os/playtron-os-files/issues?q=is%3Aopen+is%3Aissue+label%3Adocumentation) or reorganize existing documentation.
 - Code.
-    - Contribute new [features](https://github.com/playtron-os/playtron-os-scripts/issues?q=is%3Aopen+is%3Aissue+label%3Aenhancement) and [bug fixes](https://github.com/playtron-os/playtron-os-scripts/issues?q=is%3Aopen+is%3Aissue+label%3Abug).
+    - Contribute new [features](https://github.com/playtron-os/playtron-os-files/issues?q=is%3Aopen+is%3Aissue+label%3Aenhancement) and [bug fixes](https://github.com/playtron-os/playtron-os-files/issues?q=is%3Aopen+is%3Aissue+label%3Abug).
 
-Look for GitHub Issues that have the label “[good first issue](https://github.com/playtron-os/playtron-os-scripts/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22)” for simpler GitHub Issues to get started with.
+Look for GitHub Issues that have the label “[good first issue](https://github.com/playtron-os/playtron-os-files/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22)” for simpler GitHub Issues to get started with.
 
 # Pull Request Workflow
 
