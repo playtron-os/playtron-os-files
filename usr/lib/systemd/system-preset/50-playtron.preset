@@ -1,4 +1,6 @@
-enable lightdm.service
+enable clatd-ipv6-check.service
 enable create-swap.service
+enable lightdm.service
+enable NetworkManager-wait-online.service
 enable resize-root-file-system.service
 disable firewalld.service
