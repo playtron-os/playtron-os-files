@@ -50,6 +50,8 @@ Configuration:
 
 Device tweaks:
 
+- ./usr/lib/udev/rules.d/50-block-scheduler.rules
+    - Use the Kyber I/O scheduler for NVMe drives
 - ./usr/lib/udev/rules.d/50-lenovo-legion-controller.rules
     - Fixes controller on Legion Go
 
