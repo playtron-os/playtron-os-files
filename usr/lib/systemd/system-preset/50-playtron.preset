@@ -3,4 +3,5 @@ enable create-swap.service
 enable lightdm.service
 enable NetworkManager-wait-online.service
 enable resize-root-file-system.service
+enable inputplumber.service
 disable firewalld.service
