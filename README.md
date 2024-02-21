@@ -44,6 +44,8 @@ Configuration:
 
 - ./etc/xdg/weston/weston.ini
     - Default dev session configuration
+- ./usr/lib/modules-load.d/controllers.conf
+    - Load controller drivers
 - ./usr/lib/systemd/logind.conf.d/00-playtron-power.conf
     - Configure the power button
 - ./usr/lib/systemd/system-preset/50-playtron.preset
