@@ -321,16 +321,36 @@ function display {
 }
 
 function system-battery {
+	if [ -e /sys/class/power_supply/qcom-battmgr-bat/status ]; then
+		# Odin 2
+		BAT_PATH='/sys/class/power_supply/qcom-battmgr-bat'
+	elif [ -e /sys/class/power_supply/BATT/status ]; then
+		# Legion Go
+		BAT_PATH='/sys/class/power_supply/BATT'
+	elif [ -e /sys/class/power_supply/BAT1/status ]; then
+		# Steam Deck
+		BAT_PATH='/sys/class/power_supply/BAT1'
+	elif [ -e /sys/class/power_supply/BAT0/status ]; then
+		# Aya Neo 2, ROG Ally
+		BAT_PATH='/sys/class/power_supply/BAT0'
+	fi
+
 	case $1 in
 		"get-charging-status")
-			if [ "$(cat /sys/class/power_supply/BAT1/status)" == "Charging" ] ; then
+			if [ -z $BAT_PATH ]; then
+				echo 0
+			elif [ "$(cat ${BAT_PATH}/status)" == "Charging" ] ; then
 				echo 1
 			else
 				echo 0
 			fi
 			;;
 		"get-charge-level")
-			cat /sys/class/power_supply/BAT1/capacity
+			if [ -z $BAT_PATH ]; then
+				echo 0
+			else
+				cat ${BAT_PATH}/capacity
+			fi
 			;;
 		*)
 			echo "Error: unknown command"
