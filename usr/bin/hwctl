@@ -322,10 +322,16 @@ function display {
 
 function system-battery {
 	if [ -e /sys/class/power_supply/qcom-battmgr-bat/status ]; then
+		# Odin 2
 		BAT_PATH='/sys/class/power_supply/qcom-battmgr-bat'
+	elif [ -e /sys/class/power_supply/BATT/status ]; then
+		# Legion Go
+		BAT_PATH='/sys/class/power_supply/BATT'
 	elif [ -e /sys/class/power_supply/BAT1/status ]; then
+		# Steam Deck
 		BAT_PATH='/sys/class/power_supply/BAT1'
 	elif [ -e /sys/class/power_supply/BAT0/status ]; then
+		# Aya Neo 2, ROG Ally
 		BAT_PATH='/sys/class/power_supply/BAT0'
 	fi
 
