@@ -37,6 +37,9 @@ function system-info {
 
 	# Operating system
 	source /etc/os-release
+	if [ -f /usr/lib/os-release-playtron ]; then
+		source /usr/lib/os-release-playtron
+	fi
 	OS_NAME=$NAME
 	OS_VERSION=$VERSION_ID
 
