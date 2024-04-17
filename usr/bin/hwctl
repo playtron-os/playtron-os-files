@@ -58,9 +58,20 @@ function system-info {
 	grep -v "/run/media/rootfs." | \
 	grep -v "/run/media/esp." | tr -s " ")
 
+	# Resolution
+	RES_WIDTH=$(xwininfo -root | grep -e "Width" | cut -d":" -f2 | tr -d ' ')
+	RES_HEIGHT=$(xwininfo -root | grep -e "Height" | cut -d":" -f2 | tr -d ' ')
 
 	# output json
-	echo "{
+	echo "{"
+
+	if [ "$1" == "extended" ]; then
+		echo -n "
+	\"resolutionWidth\": $RES_WIDTH,
+	\"resolutionHeight\": $RES_HEIGHT,"
+	fi
+
+	echo "
 	\"vendor\": \"$MANUFACTURER\",
 	\"model\": \"$MODEL\",
 	\"formFactor\": \"$FORM_FACTOR\",
