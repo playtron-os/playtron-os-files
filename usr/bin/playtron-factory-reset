@@ -25,6 +25,9 @@ function reset_etc {
 	fi
 }
 
+# change cwd to a directory that won't be deleted
+cd /
+
 # clear all package changes
 rpm-ostree reset &> /dev/null
 
