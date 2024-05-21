@@ -1,0 +1,21 @@
+#!/bin/bash
+
+set -e
+
+TARGET="${1}"
+# Check if this is a disk or a partition
+DEVICE_TYPE=$(lsblk -ndo TYPE "${TARGET}")
+
+if [ "${DEVICE_TYPE}" = "part" ]; then
+    # Get the disk name
+    TARGET="/dev/$(lsblk -ndo PKNAME "${TARGET}")"
+fi
+
+# Create ext4 partition that fills the disk
+parted "${TARGET}" --script mklabel gpt mkpart primary ext4 0% 100%
+# Wait for partitions to show up
+sleep 1
+# Get the name of the newly created partition
+PART="/dev/$(lsblk -nlo NAME "${TARGET}" | tail -n 1)"
+# Create the ext4 filesystem
+mkfs.ext4 -F "${PART}"
