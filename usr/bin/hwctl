@@ -170,6 +170,11 @@ function storage {
 
 	function run_format {
 		device_to_format=$1
+		device_type=$(lsblk -ndo TYPE "${device_to_format}")
+		if [ "${device_type}" = "part" ]; then
+		    # Get the disk name
+		    device_to_format="/dev/$(lsblk -ndo PKNAME "${device_to_format}")"
+		fi
 		# Unmounting first allows the new partition to be mountable immediately after being formatted.
 		echo "INFO: Unmounting partitions by name"
 		for d in $(ls -1 ${device_to_format}*)
