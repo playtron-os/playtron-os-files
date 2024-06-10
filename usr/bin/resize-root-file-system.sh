@@ -3,7 +3,14 @@
 set -x
 
 # Example output: "/dev/mmcblk0p5" (SD card or eMMC), "/dev/nvme0n1p5" (NVMe), or "/dev/sda5" (SATA)
-root_partition=$(mount | grep 'on \/ ' | awk '{print $1}')
+root_partition=$(mount | grep 'on / ' | awk '{print $1}')
+overlay_detected="false"
+
+# When using OCI builds (not rpm-ostree builds), the file system is overlayed sooner.
+if [ "${root_partition}" == "overlay" ]; then
+    root_partition=$(mount | grep 'on /var ' | awk '{print $1}')
+    overlay_detected="true"
+fi
 
 root_partition_number=$(echo ${root_partition} | grep -o -P "[0-9]+$")
 
@@ -21,4 +28,8 @@ else
 
 growpart ${root_device} ${root_partition_number}
 
-btrfs filesystem resize max /
+if [ "${overlay_detected}" == "false" ]; then
+    btrfs filesystem resize max /
+else
+    btrfs filesystem resize max /var
+fi
