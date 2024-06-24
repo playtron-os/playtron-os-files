@@ -198,6 +198,15 @@ function storage {
 		fi
 		echo "INFO: Reloading system partition information"
 		partprobe 2> /dev/null
+
+		partition_name=$(basename ${partition_to_format})
+		mount_point="/run/media/${partition_name}.ext4"
+		sleep 1 # give time for automount
+		if ! mount | grep "${partition_to_format}" > /dev/null; then
+			echo "INFO: Drive was not automounted; mounting manually"
+			mkdir ${mount_point}
+			mount ${partition_to_format} ${mount_point}
+		fi
 	}
 
 	cmd=$1
