@@ -17,7 +17,9 @@ __ensure_dir() {
 }
 
 # Contains the following optional variables:
-# - BASE
+# - BASE: the full container URL
+# - PROJECT: the container's project in the registry
+# - TAG: the container tag/version
 #
 CONFIG_FILE=/etc/playtron-os.conf
 __ensure_dir $CONFIG_FILE
@@ -68,6 +70,8 @@ rebase() {
 	fi
 
 	echo "BASE=ostree-unverified-registry:registry.playtron.one/${project}/playtronos:${tag}" > $CONFIG_FILE
+	echo "PROJECT=${project}" >> $CONFIG_FILE
+	echo "TAG=${tag}" >> $CONFIG_FILE
 	__write_remote $project
 
 	if [ -n "$token" ]; then
