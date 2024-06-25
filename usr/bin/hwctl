@@ -205,6 +205,7 @@ function storage {
 		if ! mount | grep "${partition_to_format}" > /dev/null; then
 			echo "INFO: Drive was not automounted; mounting manually"
 			mkdir ${mount_point}
+			chown playtron ${mount_point}
 			mount ${partition_to_format} ${mount_point}
 		fi
 	}
