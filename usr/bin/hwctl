@@ -168,6 +168,26 @@ function storage {
 		return 1
 	}
 
+	function get_mounted_path {
+		args=$1
+		args_clean=$args
+		if [ "$args" != "/" ]; then
+			args_clean=$(echo $args | sed 's,/$,,') # drop trailing '/' for better matching
+		fi
+		user="$(who am i | cut -d' ' -f1)"
+		home_folder="$(getent passwd $user | cut -d: -f6)"
+		mounted_path=""
+		while IFS= read -r line; do
+			mounted_path=$(echo $line | tr -s ' ' | cut -d' ' -f2-)
+			if [[ "$mounted_path" == "/home" || "$mounted_path" == "/var/home" ]]; then
+				# This is the root drive. Use $HOME/.local/share/playtron instead
+				echo "${home_folder}/.local/share/playtron"
+				return 0
+			fi
+		done < <(df -h --output=source,target | grep -E "${args_clean}(\s|$)")
+		echo "$mounted_path"
+	}
+
 	function run_format {
 		device_to_format=$1
 		device_type=$(lsblk -ndo TYPE "${device_to_format}")
@@ -228,11 +248,7 @@ function storage {
 				exit 1
 			fi
 
-			args_clean=$args
-			if [ "$args" != "/" ]; then
-				args_clean=$(echo $args | sed 's,/$,,') # drop trailing '/' for better matching
-			fi
-			mounted_path=$(df -h --output=source,target | grep "${args_clean}\(\s\|$\)" | tail -n 1 | tr -s ' ' | cut -d' ' -f2-)
+			mounted_path=$(get_mounted_path "${args}")
 
 			if [ ! -d "$mounted_path" ]; then
 				echo "${args}: Not a valid partition or mounted partition path"
