@@ -322,6 +322,9 @@ function audio {
 
 function display {
 	case $1 in
+		"has-brightness-control")
+			brightnessctl --class=backlight get &> /dev/null
+			;;
 		"raise-brightness")
 			brightnessctl --class=backlight set +5% > /dev/null
 			;;
