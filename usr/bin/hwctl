@@ -339,22 +339,18 @@ function audio {
 			case $? in
 				0)
 					# set volume to a specific % value
-					echo "case: ABS"
 					wpctl set-volume --limit 1.0 @DEFAULT_AUDIO_SINK@ ${value}%
 					;;
 				1)
 					# raise volume a relative % amount
-					echo "case: +"
 					wpctl set-volume --limit 1.0 @DEFAULT_AUDIO_SINK@ ${value}%+
 					;;
 				2)
 					# lower volume a relative % amount
-					echo "case: -"
 					wpctl set-volume @DEFAULT_AUDIO_SINK@ ${value}%-
 					;;
 				*)
 					# validation error
-					echo 'case: ERROR'
 					echo $value
 					;;
 			esac
