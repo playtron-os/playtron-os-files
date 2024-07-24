@@ -103,16 +103,59 @@ __rebase_status() {
 	fi
 }
 
+# Converts rpm-ostree upgrade/rebase output to the format:
+# PERCENT_COMPLETE%: COMPLETED/TOTAL MB
+#
+# Under some conditions, such as if the update is already downloaded, no output will be written.
+# To handle these cases, any consumer of this output should start at 0% and set progress to 100% when the process exits.
+function __report_progress {
+	function to_megabytes {
+	        read in
+	        original_num=$(echo $in | cut -d' ' -f1 | cut -d' ' -f1)
+	        unit=$(echo $in | cut -d' ' -f2 | cut -d' ' -f2)
+
+	        case $unit in
+	                "GB")
+	                        echo "scale=1; $original_num * 1024" | bc
+	                ;;
+	                "MB")
+	                        echo $original_num
+	                ;;
+	                "kB")
+	                        echo "scale=1; $original_num / 1024" | bc
+	                ;;
+	                "bytes")
+	                        echo "scale=1; $original_num / 1048576" | bc
+	                ;;
+	        esac
+	}
+
+	downloaded=0.0
+	while IFS=$'\n' read -r line; do
+	        if [[ $line =~ "custom layers needed:" ]]; then
+	                total=$(echo $line | cut -d'(' -f2 | cut -d')' -f1 | to_megabytes)
+	        elif [[ $line =~ "Fetching layer" ]]; then
+	                layer_size=$(echo $line | cut -d'(' -f2 | cut -d')' -f1 | to_megabytes)
+	                downloaded=$(echo "scale=1; $downloaded + $layer_size" | bc)
+
+	                percent=$(echo "scale=0; 100*$downloaded/$total" | bc)
+	                echo "$percent%: $downloaded/$total MB"
+	        elif [[ $line =~ "Staging deployment" && -n "$total" ]]; then
+	                echo "100%: $total/$total MB"
+	        fi
+	done
+}
+
 update() {
 	case $(__rebase_status) in
 		"needed")
-			rpm-ostree rebase $BASE
+			rpm-ostree rebase $BASE 2>&1 | __report_progress
 		;;
 		"completed")
 			return
 		;;
 		"none")
-			rpm-ostree update
+			rpm-ostree upgrade 2>&1 | __report_progress
 		;;
 		*)
 			echo "ERROR: Unknown rebase status"
@@ -132,7 +175,7 @@ check() {
 			exit 1
 		;;
 		"none")
-			rpm-ostree update --check
+			rpm-ostree upgrade --check
 		;;
 		*)
 			echo "ERROR: Unknown rebase status"
