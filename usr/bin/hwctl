@@ -307,6 +307,37 @@ function storage {
 	esac
 }
 
+function validate_value {
+	if ! [[ "$1" =~ ^[-+]?[0-9]+$ ]]; then
+		echo "Value must be an integer or start with '-' or '+' for relative values"
+		return 3
+	fi
+
+	value=$1
+	if [[ "$value" =~ ^\+ ]]; then
+		value=$(echo "$value" | sed 's/+//' )
+		raise=1
+	elif [[ "$value" =~ ^- ]]; then
+		value=$(echo "$value" | sed 's/-//' )
+		lower=1
+	fi
+
+	if [ "$value" -lt 0 ] || [ "$value" -gt 100 ]; then
+		echo "Absolute value must be between 0 and 100"
+		return 3
+	fi
+
+	echo $value
+
+	if [ "$raise" == 1 ]; then
+		return 1
+	elif [ "$lower" == 1 ]; then
+		return 2
+	else
+		return 0
+	fi
+}
+
 function audio {
 	case $1 in
 		"raise-volume")
@@ -320,12 +351,25 @@ function audio {
 			echo "scale=0; $float * 100 / 1" | bc
 			;;
 		"set-volume")
-			if [ "$2" -ge 0 ] 2>/dev/null && [ "$2" -le 100 ] 2>/dev/null; then
-				wpctl set-volume --limit 1.0 @DEFAULT_AUDIO_SINK@ ${2}%
-			else
-				echo "ERROR: value must be between 0 and 100"
-				exit 1
-			fi
+			value=$(validate_value $2)
+			case $? in
+				0)
+					# set volume to a specific % value
+					wpctl set-volume --limit 1.0 @DEFAULT_AUDIO_SINK@ ${value}%
+					;;
+				1)
+					# raise volume a relative % amount
+					wpctl set-volume --limit 1.0 @DEFAULT_AUDIO_SINK@ ${value}%+
+					;;
+				2)
+					# lower volume a relative % amount
+					wpctl set-volume @DEFAULT_AUDIO_SINK@ ${value}%-
+					;;
+				*)
+					# validation error
+					echo $value
+					;;
+			esac
 			;;
 		"toggle-mute")
 			wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle
@@ -338,6 +382,9 @@ function audio {
 
 function display {
 	case $1 in
+		"has-brightness-control")
+			brightnessctl --class=backlight get &> /dev/null
+			;;
 		"raise-brightness")
 			brightnessctl --class=backlight set +5% > /dev/null
 			;;
@@ -352,12 +399,25 @@ function display {
 			fi
 			;;
 		"set-brightness")
-			if [ "$2" -ge 0 ] 2>/dev/null && [ "$2" -le 100 ] 2>/dev/null; then
-				brightnessctl --class=backlight set ${2}% > /dev/null
-			else
-				echo "ERROR: value must be between 0 and 100"
-				exit 1
-			fi
+			value=$(validate_value $2)
+			case $? in
+				0)
+					# set brightness to a specific % value
+					brightnessctl --class=backlight set ${value}% > /dev/null
+					;;
+				1)
+					# raise brightness a relative % amount
+					brightnessctl --class=backlight set +${value}% > /dev/null
+					;;
+				2)
+					# lower brightness a relative % amount
+					brightnessctl --class=backlight set ${value}%- > /dev/null
+					;;
+				*)
+					# validation error
+					echo $value
+					;;
+			esac
 			;;
 		*)
 			echo "Error: unknown command"
