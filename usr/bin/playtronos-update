@@ -141,7 +141,6 @@ function __report_progress {
 	                done_mb=$(echo "scale=1; $done_mb + $layer_size" | bc)
 			done_parts=$(echo "$done_parts + 1" | bc)
 
-	                percent=$(echo "scale=0; 100*$done_mb/$total_mb" | bc)
 	                echo "{ \"done_mb\": ${done_mb}, \"total_mb\": ${total_mb}, \"done_parts\": ${done_parts}, \"total_parts\": ${total_parts} }"
 	        elif [[ $line =~ "Staging deployment" && -n "$total" ]]; then
 	                echo "{ \"done_mb\": ${total_mb}, \"total_mb\": ${total_mb}, \"done_parts\": ${total_parts}, \"total_parts\": ${total_parts} }"
