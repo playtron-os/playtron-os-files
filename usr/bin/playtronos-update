@@ -130,18 +130,20 @@ function __report_progress {
 	        esac
 	}
 
-	downloaded=0.0
+	done_mb=0.0
+	done_parts=0
 	while IFS=$'\n' read -r line; do
 	        if [[ $line =~ "custom layers needed:" ]]; then
-	                total=$(echo $line | cut -d'(' -f2 | cut -d')' -f1 | to_megabytes)
+	                total_mb=$(echo $line | cut -d'(' -f2 | cut -d')' -f1 | to_megabytes)
+	                total_parts=$(echo $line | cut -d':' -f2 | cut -d'(' -f1 | tr -d '[:space:]')
 	        elif [[ $line =~ "Fetching layer" ]]; then
 	                layer_size=$(echo $line | cut -d'(' -f2 | cut -d')' -f1 | to_megabytes)
-	                downloaded=$(echo "scale=1; $downloaded + $layer_size" | bc)
+	                done_mb=$(echo "scale=1; $done_mb + $layer_size" | bc)
+			done_parts=$(echo "$done_parts + 1" | bc)
 
-	                percent=$(echo "scale=0; 100*$downloaded/$total" | bc)
-	                echo "$percent%: $downloaded/$total MB"
+	                echo "{ \"done_mb\": ${done_mb}, \"total_mb\": ${total_mb}, \"done_parts\": ${done_parts}, \"total_parts\": ${total_parts} }"
 	        elif [[ $line =~ "Staging deployment" && -n "$total" ]]; then
-	                echo "100%: $total/$total MB"
+	                echo "{ \"done_mb\": ${total_mb}, \"total_mb\": ${total_mb}, \"done_parts\": ${total_parts}, \"total_parts\": ${total_parts} }"
 	        fi
 	done
 }
