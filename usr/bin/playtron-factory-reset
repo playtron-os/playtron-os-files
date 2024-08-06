@@ -5,8 +5,32 @@ if [ $EUID -ne 0 ]; then
         exit 1
 fi
 
-if [ "$1" == "--preserve-user-files" ]; then
+if [[ "$@" == *"--preserve-user-files"* ]]; then
 	PRESERVE_USER_FILES=1
+	PRESERVE_USER_FILES_OPT="--preserve-user-files"
+fi
+
+if [[ "$@" == *"--install-sentinel"* ]]; then
+	# Do not perform the factory reset, but setup to do it when the session ends,
+	# then grid will shut itself down to end the session and trigger the actual factory reset.
+	#
+	# We want to make sure nothing else is running in order to prevent applications
+	# from writing files to the filesystem again.
+
+	echo $PRESERVE_USER_FILES_OPT > /tmp/playtron-factory-reset-sentinel
+	exit 0
+fi
+
+
+echo "Shutting down services..."
+
+# make sure playserve is not running so that it does not write any files while we are performing the factory reset
+systemctl --user --machine=playtron@ stop playserve
+
+if [ -n "$PRESERVE_USER_FILES" ]; then
+	echo "Performing partial factory reset..."
+else
+	echo "Performing full factory reset..."
 fi
 
 shopt -s extglob
@@ -63,6 +87,8 @@ else
 	rm -rf /home/playtron/{,.}*
 fi
 
-echo "Factory reset complete, rebooting..."
+echo "Syncing filesystem..."
+sync
 
+echo "Factory reset complete, rebooting..."
 systemctl reboot
