@@ -1,12 +1,10 @@
 [Unit]
-Description=Remount Root Filesystem as Read-Only
-ConditionPathExists=/etc/read-only.sh
+Description= Read-only service
 After=local-fs.target
 
 [Service]
 Type=oneshot
-ExecStart=/bin/mount -o remount,ro /
-ExecStop=/bin/mount -o remount,rw /
+ExecStart=/bin/bash /etc/read-only.sh
 RemainAfterExit=true
 
 [Install]
