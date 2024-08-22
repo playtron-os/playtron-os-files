@@ -226,8 +226,8 @@ function storage {
 			echo "INFO: Drive was not automounted; mounting manually"
 			mkdir ${mount_point}
 			mount -o users ${partition_to_format} ${mount_point}
-			chown -R playtron:playtron ${mount_point}
 		fi
+		chown -R playtron:playtron ${mount_point}
 	}
 
 	cmd=$1
