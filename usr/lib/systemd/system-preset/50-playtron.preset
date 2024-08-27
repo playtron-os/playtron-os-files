@@ -5,3 +5,4 @@ enable NetworkManager-wait-online.service
 enable resize-root-file-system.service
 enable inputplumber.service
 disable firewalld.service
+disable systemd-oomd.service
