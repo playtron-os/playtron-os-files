@@ -30,7 +30,7 @@ Network configurations:
     - See: https://github.com/ValveSoftware/steam-for-linux/issues/3372
 - ./usr/bin/clatd-ipv6-check
     - Check if only IPv6 is used (no IPv4) and then start clatd for 464XLAT support
-- ./usr/lib/NetworkManager/conf.d/mac-address.conf
+- ./usr/lib/NetworkManager/conf.d/50-playtron.conf
     - A configuration to disable random MAC address generation to fix Wi-Fi connections with some routers.
 - ./usr/lib/systemd/system/clatd-ipv6-check.service
     - A systemd service file to run the `clatd-ipv6-check` script
