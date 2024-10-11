@@ -463,10 +463,22 @@ function system-battery {
 	esac
 }
 
+function datetime {
+	case $1 in
+		"set-timezone")
+			timedatectl set-timezone $2
+			;;
+		*)
+			echo "Error: unknown command"
+			;;
+	esac
+}
+
+
 SUBSYSTEM=$1
 shift
 
-if [[ "$SUBSYSTEM" == @(audio|display|system-battery|system-info|storage) ]]; then
+if [[ "$SUBSYSTEM" == @(audio|datetime|display|system-battery|system-info|storage) ]]; then
 	$SUBSYSTEM $@
 else
 	echo "Error: unknown subsystem $SUBSYSTEM"
