@@ -395,7 +395,7 @@ function display {
 			cur=$(brightnessctl --class=backlight get)
 			max=$(brightnessctl --class=backlight max)
 			if [[ -n "$cur" && -n "$max" ]]; then
-				echo $((100 * $cur / $max))
+				echo $(( (100 * cur + (max / 2)) / max ))
 			fi
 			;;
 		"set-brightness")
