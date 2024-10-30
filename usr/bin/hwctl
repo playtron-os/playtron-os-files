@@ -464,9 +464,30 @@ function system-battery {
 }
 
 function datetime {
+	if [ ! -d /var/lib/playtron ]; then
+	    mkdir -p /var/lib/playtron
+	fi
 	case $1 in
+		"get-timezone")
+			timedatectl show | grep Timezone | cut -d= -f2
+			;;
+		"list-timezones")
+			timedatectl list-timezones
+			;;
 		"set-timezone")
 			timedatectl set-timezone $2
+			echo manual > /var/lib/playtron/timezone-method
+			;;
+		"set-timezone-auto")
+			if [ ! -f /usr/bin/tzupdate ]; then
+				echo "Error: 'tzupdate' is not installed"
+			else
+				tzupdate
+			fi
+			echo auto > /var/lib/playtron/timezone-method
+			;;
+		"get-timezone-method")
+			cat /var/lib/playtron/timezone-method
 			;;
 		*)
 			echo "Error: unknown command"
