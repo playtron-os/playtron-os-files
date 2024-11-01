@@ -7,6 +7,14 @@ Hardware control:
 - ./usr/bin/hwctl
     - A Bash script to manage audio, battery, display, storage, and system information
 
+Open file and memory mapping limits:
+
+- ./etc/security/limits.d/50-playtron.conf
+    - Increase the open file limit for user processes to 524288.
+- ./usr/lib/sysctl.d/50-playtron.conf
+    - Increase the open file limit for the kernel to 524288.
+    - Increase the mapped memory limit to 16777216.
+
 Resize root file system:
 
 - ./usr/lib/systemd/system/resize-root-file-system.service
@@ -16,7 +24,7 @@ Resize root file system:
 
 Swap creation:
 
-- ./usr/lib/sysctl.d/50-swappiness.conf
+- ./usr/lib/sysctl.d/50-playtron.conf
     - Lower the swappiness to 1
 - ./usr/lib/systemd/system/create-swap.service
     - A systemd service file to run the `create-swap.sh` script once (after the `resize-root-file-system` service finishes) and then disable itself so the service does not run again
