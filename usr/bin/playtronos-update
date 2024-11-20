@@ -1,6 +1,8 @@
 #! /bin/bash
 
-if [ $EUID -ne 0 ]; then
+if [ $EUID -ne 0 ] && [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+	# do not execute if loaded from test suite
+
 	echo "$(basename $0) must be run as root"
 	exit 1
 fi
@@ -21,13 +23,17 @@ __ensure_dir() {
 # - PROJECT: the container's project in the registry
 # - TAG: the container tag/version
 #
-CONFIG_FILE=/etc/playtron-os.conf
-__ensure_dir $CONFIG_FILE
-touch $CONFIG_FILE
-source $CONFIG_FILE
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+	# do not execute if loaded from test suite
 
-REMOTE_FILE=/etc/ostree/remotes.d/playtron-os.conf
-AUTH_FILE=/etc/ostree/auth.json
+	CONFIG_FILE=/etc/playtron-os.conf
+	__ensure_dir $CONFIG_FILE
+	touch $CONFIG_FILE
+	source $CONFIG_FILE
+
+	REMOTE_FILE=/etc/ostree/remotes.d/playtron-os.conf
+	AUTH_FILE=/etc/ostree/auth.json
+fi
 
 __write_remote() {
 local project=$1
@@ -116,34 +122,37 @@ function __report_progress {
 
 	        case $unit in
 	                "GB")
-	                        echo "scale=1; $original_num * 1024" | bc
+	                        echo "$original_num * 1024" | bc
 	                ;;
 	                "MB")
 	                        echo $original_num
 	                ;;
 	                "kB")
-	                        echo "scale=1; $original_num / 1024" | bc
+	                        echo "$original_num / 1024" | bc
 	                ;;
 	                "bytes")
-	                        echo "scale=1; $original_num / 1048576" | bc
+	                        echo "$original_num / 1048576" | bc
 	                ;;
 	        esac
 	}
 
-	done_mb=0.0
+	done_mb=0
+	total_mb=0
 	done_parts=0
+	total_parts=0
 	while IFS=$'\n' read -r line; do
-	        if [[ $line =~ "custom layers needed:" ]]; then
-	                total_mb=$(echo $line | cut -d'(' -f2 | cut -d')' -f1 | to_megabytes)
-	                total_parts=$(echo $line | cut -d':' -f2 | cut -d'(' -f1 | tr -d '[:space:]')
-	        elif [[ $line =~ "Fetching layer" ]]; then
+	        if [[ $line =~ "ostree chunk layers needed:" ]] || [[ $line =~ "custom layers needed:" ]]; then
+	                total_mb2=$(echo $line | cut -d'(' -f2 | cut -d')' -f1 | to_megabytes)
+	                total_parts2=$(echo $line | cut -d':' -f2 | cut -d'(' -f1 | tr -d '[:space:]')
+
+			total_mb=$(echo "$total_mb + $total_mb2" | bc)
+			total_parts=$(echo "$total_parts + $total_parts2" | bc)
+	        elif [[ $line =~ "Fetching ostree chunk" ]] || [[ $line =~ "Fetching layer" ]]; then
 	                layer_size=$(echo $line | cut -d'(' -f2 | cut -d')' -f1 | to_megabytes)
-	                done_mb=$(echo "scale=1; $done_mb + $layer_size" | bc)
+	                done_mb=$(echo "$done_mb + $layer_size" | bc)
 			done_parts=$(echo "$done_parts + 1" | bc)
 
-	                echo "{ \"done_mb\": ${done_mb}, \"total_mb\": ${total_mb}, \"done_parts\": ${done_parts}, \"total_parts\": ${total_parts} }"
-	        elif [[ $line =~ "Staging deployment" && -n "$total" ]]; then
-	                echo "{ \"done_mb\": ${total_mb}, \"total_mb\": ${total_mb}, \"done_parts\": ${total_parts}, \"total_parts\": ${total_parts} }"
+	                echo "{ \"done_mb\": $(echo $done_mb | awk '{printf "%d", $0}'), \"total_mb\": $(echo $total_mb | awk '{printf "%d", $0}'), \"done_parts\": ${done_parts}, \"total_parts\": ${total_parts} }"
 	        fi
 	done
 }
@@ -186,14 +195,17 @@ check() {
 	esac
 }
 
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+	# do not execute if loaded from test suite
 
-CMD=$1
-shift
+	CMD=$1
+	shift
 
-if [ "$CMD" == "--rebase" ]; then
-	rebase $@
-elif [ "$CMD" == "--check" ]; then
-	check
-else
-	update
+	if [ "$CMD" == "--rebase" ]; then
+		rebase $@
+	elif [ "$CMD" == "--check" ]; then
+		check
+	else
+		update
+	fi
 fi

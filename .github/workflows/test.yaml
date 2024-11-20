@@ -1,0 +1,16 @@
+name: Run tests
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install go-task
+        run: |
+          curl -L -O https://github.com/go-task/task/releases/download/v3.37.2/task_linux_amd64.deb
+          sudo dpkg --install task_linux_amd64.deb
+          rm --force task_linux_amd64.deb
+      - uses: actions/checkout@v4
+      - name: Run all tests
+        run: task test
