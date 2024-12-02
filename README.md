@@ -62,7 +62,7 @@ Configuration:
     - Enable default system services
 - ./usr/lib/systemd/user-preset/50-playtron.preset
     - Enable default user services
-- ./usr/share/lightdm/lightdm.conf.d/55-playtron.conf
+- ./usr/lib/sddm/sddm.conf.d/55-playtron.conf
     - Autologin to playtron session
 - ./usr/share/polkit-1/rules.d/50-one.playtron.rpmostree1.rules
     - Allow running OS upgrades without a password

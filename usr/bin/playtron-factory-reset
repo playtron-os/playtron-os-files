@@ -62,10 +62,12 @@ rsync -aHX /etc/NetworkManager /tmp/
 # reset some key files in /etc
 reset_etc NetworkManager
 reset_etc systemd
-reset_etc lightdm
+reset_etc sddm
+reset_etc sddm.conf.d
 reset_etc ssh
 reset_etc xdg
 rsync -aHX /usr/etc/gai.conf /etc/gai.conf
+rsync -aHX /usr/etc/sddm.conf /etc/sddm.conf
 
 # reset playtron password
 echo 'playtron:playtron' | chpasswd
