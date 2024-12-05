@@ -580,4 +580,13 @@ if [[ "$SUBSYSTEM" == @(audio|datetime|display|system-battery|system-info|storag
 	$SUBSYSTEM $@
 else
 	echo "Error: unknown subsystem $SUBSYSTEM"
+	echo "Available subsystems:"
+	echo " - audio"
+	echo " - datetime"
+	echo " - display"
+	echo " - system-battery"
+	echo " - system-info"
+	echo " - storage"
+	echo " - ssh"
+	echo " - environment"
 fi
