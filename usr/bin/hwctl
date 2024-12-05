@@ -509,10 +509,74 @@ function ssh {
 	esac
 }
 
+CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
+ENV_DIR="${CONFIG_HOME}/environment.d"
+
+function environment-set {
+	VAR=$1
+	VALUE=$2
+	if [ -z "$VALUE" ]; then
+		echo "Error: No value specified"
+		exit
+	fi
+
+	ENV_FILE="${ENV_DIR}/${VAR}.conf"
+	mkdir -p ${ENV_DIR}
+	echo "${VAR}=${VALUE}" > ${ENV_FILE}
+}
+
+function environment-clear {
+	VAR=$1
+	ENV_FILE="${ENV_DIR}/${VAR}.conf"
+	if [ -f ${ENV_FILE} ]; then
+		rm ${ENV_FILE}
+	fi
+}
+
+function environment-validate-common {
+	isValidVarName() {
+		echo "$1" | grep -q '^[_[:alpha:]][_[:alpha:][:digit:]]*$'
+	}
+
+	VAR=$1
+	if [ -z "$VAR" ]; then
+		echo "Error: No environment variable specified"
+		exit
+	fi
+
+	if ! isValidVarName "$VAR"; then
+		echo "Error: Invalid environment variable name"
+		exit
+	fi
+}
+
+function environment {
+	if [ "$EUID" -eq 0 ]; then
+		echo "This command cannot be run as root"
+		exit
+	fi
+
+	case $1 in
+		"set")
+			shift
+			environment-validate-common $@
+			environment-set $@
+			;;
+		"clear")
+			shift
+			environment-validate-common $@
+			environment-clear $@
+			;;
+		*)
+			echo "Error: unknown command"
+			;;
+	esac
+}
+
 SUBSYSTEM=$1
 shift
 
-if [[ "$SUBSYSTEM" == @(audio|datetime|display|system-battery|system-info|storage|ssh) ]]; then
+if [[ "$SUBSYSTEM" == @(audio|datetime|display|system-battery|system-info|storage|ssh|environment) ]]; then
 	$SUBSYSTEM $@
 else
 	echo "Error: unknown subsystem $SUBSYSTEM"
