@@ -495,11 +495,24 @@ function datetime {
 	esac
 }
 
+function ssh {
+	case $1 in
+		"enable")
+			systemctl enable --now sshd
+			;;
+		"disable")
+			systemctl disable --now sshd
+			;;
+		*)
+			echo "Error: unknown command"
+			;;
+	esac
+}
 
 SUBSYSTEM=$1
 shift
 
-if [[ "$SUBSYSTEM" == @(audio|datetime|display|system-battery|system-info|storage) ]]; then
+if [[ "$SUBSYSTEM" == @(audio|datetime|display|system-battery|system-info|storage|ssh) ]]; then
 	$SUBSYSTEM $@
 else
 	echo "Error: unknown subsystem $SUBSYSTEM"
