@@ -503,6 +503,15 @@ function ssh {
 		"disable")
 			systemctl disable --now sshd
 			;;
+		"status")
+			if systemctl status sshd | grep "Active: active" > /dev/null; then
+				echo "enabled"
+				exit 0
+			else
+				echo "disabled"
+				exit 1
+			fi
+			;;
 		*)
 			echo "Error: unknown command"
 			;;
