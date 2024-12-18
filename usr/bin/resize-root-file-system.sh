@@ -6,8 +6,8 @@ set -x
 root_partition=$(mount | grep 'on / ' | awk '{print $1}')
 overlay_detected="false"
 
-# When using OCI builds (not rpm-ostree builds), the file system is overlayed sooner.
-if [ "${root_partition}" == "overlay" ]; then
+# When using OCI and bootc builds (not rpm-ostree builds), the file system is overlayed sooner.
+if [ "${root_partition}" == "overlay" ] || [ "${root_partition}" == "composefs" ]; then
     root_partition=$(mount | grep 'on /var ' | awk '{print $1}')
     overlay_detected="true"
 fi
