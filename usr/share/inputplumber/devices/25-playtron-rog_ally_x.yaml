@@ -59,6 +59,25 @@ source_devices:
           value: "1"
       sys_name: "event*"
       subsystem: input
+  - group: keyboard
+    unique: false
+    passthrough: true
+    udev:
+      properties:
+        - name: ID_INPUT_KEYBOARD
+          value: "1"
+      subsystem: input
+      sys_name: "event*"
+    # Exclude all input except a few keys
+    events:
+      exclude:
+        - "*"
+      include:
+        - Keyboard:KeyLeftMeta
+        - Keyboard:KeyRightMeta
+        - Keyboard:KeyVolumeUp
+        - Keyboard:KeyVolumeDown
+        - Keyboard:KeyMute
 
 # Optional configuration for the composite device
 options:
