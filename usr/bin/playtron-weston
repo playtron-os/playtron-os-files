@@ -1,0 +1,6 @@
+#! /bin/bash
+
+# the dev session switch is a one time thing, immediately
+# revert to the default/user session for next boot
+pkexec playtronos-session-select user --no-switch
+weston

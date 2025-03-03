@@ -11,18 +11,31 @@ SESSION_OVERRIDE="/etc/sddm.conf.d/60-playtron-session-override.conf"
 SESSION_LIST=('user' 'dev')
 SELECTED_SESSION="$1"
 
+if [ "$2" = "--no-switch" ]; then
+	NO_SWITCH=1
+fi
 
 function dev() {
 	mkdir -p $(dirname $SESSION_OVERRIDE)
 
 	echo '
 [Autologin]
-Session=weston
+Session=playtron-weston
 ' > ${SESSION_OVERRIDE}
+
+	# workaround for touch screen not working in dev session
+	systemctl stop inputplumber
 }
 
 function user() {
 	rm -f ${SESSION_OVERRIDE}
+
+	# dev session calls this script again with the `--no-switch` argument to re-enable
+	# the user session, we don't want to start inputplumber in that case
+	if [ -z "${NO_SWITCH}" ]; then
+		# undo workaround for touch screen not working in dev session
+		systemctl start inputplumber
+	fi
 }
 
 function print_session_list() {
@@ -74,4 +87,6 @@ else
 	exit 1
 fi
 
-systemctl restart display-manager
+if [ -z "${NO_SWITCH}" ]; then
+	systemctl restart display-manager
+fi
