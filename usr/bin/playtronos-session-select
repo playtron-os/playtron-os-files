@@ -13,6 +13,9 @@ SELECTED_SESSION="$1"
 
 if [ "$2" = "--no-switch" ]; then
 	NO_SWITCH=1
+
+	# a workaround to fix touch input in the dev session
+	systemctl restart inputplumber
 fi
 
 function dev() {
@@ -22,20 +25,10 @@ function dev() {
 [Autologin]
 Session=playtron-weston
 ' > ${SESSION_OVERRIDE}
-
-	# workaround for touch screen not working in dev session
-	systemctl stop inputplumber
 }
 
 function user() {
 	rm -f ${SESSION_OVERRIDE}
-
-	# dev session calls this script again with the `--no-switch` argument to re-enable
-	# the user session, we don't want to start inputplumber in that case
-	if [ -z "${NO_SWITCH}" ]; then
-		# undo workaround for touch screen not working in dev session
-		systemctl start inputplumber
-	fi
 }
 
 function print_session_list() {
