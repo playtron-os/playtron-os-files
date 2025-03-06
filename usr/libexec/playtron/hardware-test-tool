@@ -1,0 +1,373 @@
+#! /usr/bin/env python3
+
+import os
+import dbus
+import math
+import time
+import json
+import pygame
+import pygame.freetype
+from dataclasses import dataclass
+
+pygame.init()
+screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+
+BACKGROUND_COLOR = ( 50, 50, 50)
+BUTTON_COLOR     = (100,100,100)
+TEXT_COLOR       = (255,255,255)
+FAIL_COLOR       = (180,  0,  0)
+PASS_COLOR       = (  0,180,  0)
+
+FONT_SIZE = screen.get_height() // 29
+FONT = pygame.freetype.Font('/usr/share/fonts/google-noto-sans-mono-cjk-vf-fonts/NotoSansMonoCJK-VF.ttc', FONT_SIZE)
+
+
+class PlaceholderTest:
+    def __init__(self):
+        self.name = ''
+        self.reset()
+
+    def reset(self):
+        self.done = False
+        self.result = None
+
+    def start(self, screen, font):
+        self.reset()
+
+    def draw(self, screen, font):
+        pass
+
+    def event(self, event):
+        if event.type == pygame.MOUSEBUTTONUP:
+            self.done = True
+
+
+class InputTest(PlaceholderTest):
+    def __init__(self):
+        self.name = 'Input|输入'
+        self.reset()
+
+    def start(self, screen, font):
+        self.reset()
+        os.popen('foot --maximized --hold -e inputplumber device 0 test')
+        self.done = True
+
+
+class ExitAction(PlaceholderTest):
+    def __init__(self):
+        self.name = 'Exit|退出'
+        self.reset()
+
+    def start(self, screen, font):
+        self.reset()
+        exit()
+
+class PowerOffAction(PlaceholderTest):
+    def __init__(self):
+        self.name = 'Power off|关机'
+        self.reset()
+
+    def start(self, screen, font):
+        self.reset()
+        os.popen('poweroff')
+
+
+class SystemTest(PlaceholderTest):
+    def __init__(self):
+        self.name = 'System|系统'
+        self.reset()
+
+    def start(self, screen, font):
+        self.reset()
+
+        raw_data = os.popen('hwctl system-info').read()
+        data = json.loads(raw_data)
+
+        bios_vendor = os.popen('cat /sys/devices/virtual/dmi/id/bios_vendor').read().strip()
+        bios_release = os.popen('cat /sys/devices/virtual/dmi/id/bios_release').read().strip()
+        bios_version = os.popen('cat /sys/devices/virtual/dmi/id/bios_version').read().strip()
+        self.bios_text = f"BIOS: {bios_vendor} {bios_release} {bios_version}"
+        self.disk_text = f"Disk|存储: {math.ceil(data['storageDevices'][0]['totalMB'] / 1000)} GB"
+        self.ram_text = f"RAM|内存: {math.ceil((data['ramTotalMB'] + data['vramMB']) / 1000)} GB"
+        self.cpu_text = f"CPU|处理器: {data['cpuName']}"
+
+    def draw(self, screen, font):
+        FONT.render_to(screen, (FONT_SIZE, FONT_SIZE*1), self.bios_text, TEXT_COLOR)
+        FONT.render_to(screen, (FONT_SIZE, FONT_SIZE*3), self.disk_text, TEXT_COLOR)
+        FONT.render_to(screen, (FONT_SIZE, FONT_SIZE*5), self.ram_text, TEXT_COLOR)
+        FONT.render_to(screen, (FONT_SIZE, FONT_SIZE*7), self.cpu_text, TEXT_COLOR)
+
+
+
+@dataclass
+class Network:
+    signal: str
+    frequency: str
+    ssid: str
+
+class WifiTest(PlaceholderTest):
+    def __init__(self):
+        self.name = 'Wifi|无线Wi-Fi'
+        self.reset()
+
+    def start(self, screen, font):
+        self.reset()
+
+        self.networks = []
+        data = os.popen('nmcli --terse --fields SSID,SIGNAL,FREQ dev wifi list | grep -v "^:" | tail -n +2').read()
+        for line in data.split('\n'):
+            entry=line.split(':')
+            if len(entry) >= 3:
+                self.networks.append(Network(ssid=entry[0], signal=entry[1], frequency=entry[2]))
+
+    def draw(self, screen, font):
+        FONT.render_to(screen, (FONT_SIZE*1, FONT_SIZE*1), 'Signal|信号强度', TEXT_COLOR)
+        FONT.render_to(screen, (FONT_SIZE*12, FONT_SIZE*1), 'Frequency|频率', TEXT_COLOR)
+        FONT.render_to(screen, (FONT_SIZE*24, FONT_SIZE*1), 'SSID', TEXT_COLOR)
+
+        for i in range(len(self.networks)-1):
+            network = self.networks[i]
+            FONT.render_to(screen, (FONT_SIZE*1, FONT_SIZE*(i+2)*1.5), network.signal, TEXT_COLOR)
+            FONT.render_to(screen, (FONT_SIZE*12, FONT_SIZE*(i+2)*1.5), network.frequency, TEXT_COLOR)
+            FONT.render_to(screen, (FONT_SIZE*24, FONT_SIZE*(i+2)*1.5), network.ssid, TEXT_COLOR)
+
+
+class BluetoothTest(PlaceholderTest):
+    def __init__(self):
+        self.name = 'Bluetooth|蓝牙'
+        self.reset()
+
+    def start(self, screen, font):
+        self.reset()
+
+        self.devices = []
+        os.popen('bluetoothctl power off')
+        time.sleep(1)
+        os.popen('bluetoothctl power on')
+        time.sleep(1)
+        data = os.popen('bluetoothctl --timeout 10 scan on').read()
+        os.popen('bluetoothctl power off')
+        for line in data.split('\n'):
+            if 'NEW' not in line:
+                continue
+            entry=line.split(' ')
+            if len(entry) >= 4:
+                self.devices.append(' '.join(entry[3:]))
+
+    def draw(self, screen, font):
+        FONT.render_to(screen, (FONT_SIZE*1, FONT_SIZE*1), 'Bluetooth Devices|蓝牙设备', TEXT_COLOR)
+
+        for i in range(len(self.devices)):
+            device = self.devices[i]
+            FONT.render_to(screen, (FONT_SIZE*1, FONT_SIZE*(i+2)*1.5), device, TEXT_COLOR)
+
+
+
+class DisplayTest(PlaceholderTest):
+    def __init__(self):
+        self.name = 'Display|显示器'
+        self.reset()
+
+        GREEN=(0,255,0)
+        WHITE=(255,255,255)
+        GRAY=(128,128,128)
+        BLACK=(0,0,0)
+        RED=(255,0,0)
+        BLUE=(0,0,255)
+        YELLOW=(255,255,0)
+        CYAN=(0,255,255)
+        MAGENTA=(255,0,255)
+        self.states = [GREEN, WHITE, GRAY, BLACK, RED, GREEN, BLUE, YELLOW, CYAN, MAGENTA]
+
+    def start(self, screen, font):
+        self.reset()
+        self.state = 0
+
+    def draw(self, screen, font):
+        screen.fill(self.states[self.state])
+
+    def event(self, event):
+        if event.type == pygame.MOUSEBUTTONUP:
+            self.state += 1
+
+        if self.state > len(self.states) - 1:
+            self.done = True
+
+
+
+class TouchscreenTest(PlaceholderTest):
+    def __init__(self):
+        self.name = 'Touchscreen|触摸'
+        self.reset()
+        self.start_time = None
+
+    def start(self, screen, font):
+        self.reset()
+        W = screen.get_width() / 13
+        H = screen.get_height() / 13
+        self.rects=[]
+        self.start_time = time.perf_counter()
+
+        for row in [0,3,6,9,12]:
+            for col in range(13):
+                self.rects.append(pygame.Rect(W*col,H*row,W,H))
+
+        for col in [0,3,9,12]:
+            for row in range(13):
+                self.rects.append(pygame.Rect(W*col,H*row,W,H))
+
+    def draw(self, screen, font):
+        if self.start_time:
+            time_remaining = int(31 - (time.perf_counter() - self.start_time))
+            if time_remaining < 0:
+                time_remaining = 0
+                self.result = 'fail'
+                self.done = True
+                self.start_time = None
+
+            font.render_to(screen, (screen.get_width()/2, screen.get_height()/6), str(time_remaining), TEXT_COLOR)
+
+        for rect in self.rects:
+            pygame.draw.rect(screen, PASS_COLOR, rect)
+            pygame.draw.rect(screen, BACKGROUND_COLOR, rect, 4)
+
+    def event(self, event):
+        pos = None
+        if event.type == pygame.MOUSEMOTION and pygame.mouse.get_pressed()[0] == True:
+            pos = event.pos
+        elif event.type == pygame.MOUSEBUTTONUP or event.type == pygame.MOUSEBUTTONDOWN:
+            pos = event.pos
+
+        if pos:
+            for i in range(len(self.rects)-1, -1, -1):
+                if self.rects[i].collidepoint(pos):
+                    del self.rects[i]
+
+        if len(self.rects) == 0:
+            self.done = True
+
+
+
+
+@dataclass
+class Test:
+    test: object
+    rect: pygame.Rect
+
+TILE_W = screen.get_width() / 3
+TILE_H = screen.get_height() / 7
+tests = [
+    Test(test=SystemTest(),    rect=pygame.Rect(TILE_W*0, TILE_H*0, TILE_W, TILE_H)),
+    Test(test=WifiTest(),      rect=pygame.Rect(TILE_W*1, TILE_H*0, TILE_W, TILE_H)),
+    Test(test=BluetoothTest(), rect=pygame.Rect(TILE_W*2, TILE_H*0, TILE_W, TILE_H)),
+
+    Test(test=InputTest(), rect=pygame.Rect(TILE_W*0, TILE_H*1, TILE_W, TILE_H)),
+    Test(test=PlaceholderTest(), rect=pygame.Rect(TILE_W*1, TILE_H*1, TILE_W, TILE_H)), # Hardware buttons
+    Test(test=PlaceholderTest(), rect=pygame.Rect(TILE_W*2, TILE_H*1, TILE_W, TILE_H)), # Battery
+
+    Test(test=PlaceholderTest(),  rect=pygame.Rect(TILE_W*0, TILE_H*2, TILE_W, TILE_H)), # Screen Brightness
+    Test(test=DisplayTest(),      rect=pygame.Rect(TILE_W*1, TILE_H*2, TILE_W, TILE_H)),
+    Test(test=PlaceholderTest(),  rect=pygame.Rect(TILE_W*2, TILE_H*2, TILE_W, TILE_H)), # Accelerometer
+
+    Test(test=PlaceholderTest(), rect=pygame.Rect(TILE_W*0, TILE_H*3, TILE_W, TILE_H)), # Gyroscope
+    Test(test=PlaceholderTest(), rect=pygame.Rect(TILE_W*1, TILE_H*3, TILE_W, TILE_H)), # Speakers
+    Test(test=PlaceholderTest(), rect=pygame.Rect(TILE_W*2, TILE_H*3, TILE_W, TILE_H)), # Headphones
+
+    Test(test=TouchscreenTest(), rect=pygame.Rect(TILE_W*0, TILE_H*4, TILE_W, TILE_H)),
+    Test(test=PlaceholderTest(), rect=pygame.Rect(TILE_W*1, TILE_H*4, TILE_W, TILE_H)), # External Display
+    Test(test=PlaceholderTest(), rect=pygame.Rect(TILE_W*2, TILE_H*4, TILE_W, TILE_H)), # Storage
+
+    Test(test=PlaceholderTest(), rect=pygame.Rect(TILE_W*0, TILE_H*5, TILE_W, TILE_H)),
+    Test(test=PlaceholderTest(), rect=pygame.Rect(TILE_W*1, TILE_H*5, TILE_W, TILE_H)),
+    Test(test=PlaceholderTest(), rect=pygame.Rect(TILE_W*2, TILE_H*5, TILE_W, TILE_H)),
+
+    Test(test=PlaceholderTest(), rect=pygame.Rect(TILE_W*0, TILE_H*6, TILE_W, TILE_H)),
+    Test(test=ExitAction(),      rect=pygame.Rect(TILE_W*1, TILE_H*6, TILE_W, TILE_H)),
+    Test(test=PowerOffAction(),  rect=pygame.Rect(TILE_W*2, TILE_H*6, TILE_W, TILE_H)),
+]
+
+
+active_test = None
+
+def draw_main_screen():
+    for test in tests:
+        color = BUTTON_COLOR
+        if test.test.result == 'pass':
+            color = PASS_COLOR
+        if test.test.result == 'fail':
+            color = FAIL_COLOR
+        pygame.draw.rect(screen, color, test.rect)
+        pygame.draw.rect(screen, BACKGROUND_COLOR, test.rect, FONT_SIZE // 2)
+        FONT.render_to(screen, (test.rect.x+FONT_SIZE, test.rect.y+TILE_H/2-FONT_SIZE/2), test.test.name, TEXT_COLOR)
+
+
+def handle_main_events(event):
+    global active_test
+    if event.type == pygame.MOUSEBUTTONUP:
+        for test in tests:
+            if test.rect.collidepoint(event.pos):
+                # give immediate feedback for click
+                screen.fill(BACKGROUND_COLOR)
+                pygame.display.flip()
+
+                # start the test
+                active_test = test.test
+                active_test.start(screen, FONT)
+
+
+
+pass_rect = pygame.Rect(FONT_SIZE*10, FONT_SIZE*12, FONT_SIZE*16, FONT_SIZE*3)
+fail_rect = pygame.Rect(FONT_SIZE*27, FONT_SIZE*12, FONT_SIZE*16, FONT_SIZE*3)
+def draw_result_screen():
+    pygame.draw.rect(screen, PASS_COLOR, pass_rect)
+    FONT.render_to(screen, (pass_rect.x+FONT_SIZE, pass_rect.y+FONT_SIZE), 'Passed|通过', TEXT_COLOR)
+
+    pygame.draw.rect(screen, FAIL_COLOR, fail_rect)
+    FONT.render_to(screen, (fail_rect.x+FONT_SIZE, fail_rect.y+FONT_SIZE), 'Failed|失败', TEXT_COLOR)
+
+def handle_result_events(event):
+    global active_test
+    if event.type == pygame.MOUSEBUTTONUP:
+        if pygame.Rect(pass_rect).collidepoint(event.pos):
+            active_test.result = 'pass'
+            active_test = None
+        if pygame.Rect(fail_rect).collidepoint(event.pos):
+            active_test.result = 'fail'
+            active_test = None
+
+
+
+running = True
+while running:
+    screen.fill(BACKGROUND_COLOR)
+
+    needs_result = active_test and active_test.done and not active_test.result
+
+    if active_test and active_test.done and active_test.result:
+        active_test = None
+
+    if needs_result:
+        draw_result_screen()
+    elif active_test:
+        active_test.draw(screen, FONT)
+    else:
+        draw_main_screen()
+
+    try:
+        events = pygame.event.get()
+    except:
+        events = []
+
+    for event in events:
+        if event.type == pygame.QUIT:
+            running = False
+        elif needs_result:
+            handle_result_events(event)
+        elif active_test:
+            active_test.event(event)
+        else:
+            handle_main_events(event)
+
+    pygame.display.flip()
+
+pygame.quit()
