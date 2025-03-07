@@ -28,7 +28,8 @@ def signal_handler(*args, **kwargs):
 
     if state['ui_action'] and state['ui_r1'] and state['ui_l1'] and state['ui_l3']:
         print('Combo detected, switching to dev session')
-        os.system('pkexec playtronos-session-select dev')
+        os.system('pkexec playtronos-session-select dev --no-switch')
+        os.system('reboot')
         result = 0
         loop.quit()
 

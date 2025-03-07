@@ -13,9 +13,6 @@ SELECTED_SESSION="$1"
 
 if [ "$2" = "--no-switch" ]; then
 	NO_SWITCH=1
-
-	# a workaround to fix touch input in the dev session
-	systemctl restart inputplumber
 fi
 
 function dev() {
