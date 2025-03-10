@@ -45,6 +45,9 @@ class PlaceholderTest:
             self.done = True
 
 
+# Test video taken from: https://test-videos.co.uk/bigbuckbunny/webm-vp9
+TEST_VIDEO_PATH='../../share/playtron/test_video.webm'
+
 class ExternalDisplayTest(PlaceholderTest):
     def __init__(self):
         self.name = 'External Display|外接显示器'
@@ -55,7 +58,7 @@ class ExternalDisplayTest(PlaceholderTest):
 
         # `-left 1921` places the video off the edge of the main screen
         # so the video becomes fullscreen on the secondary display
-        os.popen('ffplay -left 1921 -fs -loop 3 -autoexit -volume 0 ../../share/playtron/test_video.webm')
+        os.popen(f'ffplay -left 1921 -fs -loop 3 -autoexit -volume 0 {TEST_VIDEO_PATH}')
         self.done = True
 
     def stop(self):
