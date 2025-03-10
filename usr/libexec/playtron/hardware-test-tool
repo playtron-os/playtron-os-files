@@ -34,12 +34,32 @@ class PlaceholderTest:
     def start(self, screen, font):
         self.reset()
 
+    def stop(self):
+        pass
+
     def draw(self, screen, font):
         pass
 
     def event(self, event):
         if event.type == pygame.MOUSEBUTTONUP:
             self.done = True
+
+
+class ExternalDisplayTest(PlaceholderTest):
+    def __init__(self):
+        self.name = 'External Display|外接显示器'
+        self.reset()
+
+    def start(self, screen, font):
+        self.reset()
+
+        # `-left 1921` places the video off the edge of the main screen
+        # so the video becomes fullscreen on the secondary display
+        os.popen('ffplay -left 1921 -fs -loop 3 -autoexit -volume 0 ../../share/playtron/test_video.webm')
+        self.done = True
+
+    def stop(self):
+        os.popen('killall ffplay')
 
 
 class InputTest(PlaceholderTest):
@@ -273,9 +293,9 @@ tests = [
     Test(test=PlaceholderTest(), rect=pygame.Rect(TILE_W*1, TILE_H*3, TILE_W, TILE_H)), # Speakers
     Test(test=PlaceholderTest(), rect=pygame.Rect(TILE_W*2, TILE_H*3, TILE_W, TILE_H)), # Headphones
 
-    Test(test=TouchscreenTest(), rect=pygame.Rect(TILE_W*0, TILE_H*4, TILE_W, TILE_H)),
-    Test(test=PlaceholderTest(), rect=pygame.Rect(TILE_W*1, TILE_H*4, TILE_W, TILE_H)), # External Display
-    Test(test=PlaceholderTest(), rect=pygame.Rect(TILE_W*2, TILE_H*4, TILE_W, TILE_H)), # Storage
+    Test(test=TouchscreenTest(),     rect=pygame.Rect(TILE_W*0, TILE_H*4, TILE_W, TILE_H)),
+    Test(test=ExternalDisplayTest(), rect=pygame.Rect(TILE_W*1, TILE_H*4, TILE_W, TILE_H)),
+    Test(test=PlaceholderTest(),     rect=pygame.Rect(TILE_W*2, TILE_H*4, TILE_W, TILE_H)), # Storage
 
     Test(test=PlaceholderTest(), rect=pygame.Rect(TILE_W*0, TILE_H*5, TILE_W, TILE_H)),
     Test(test=PlaceholderTest(), rect=pygame.Rect(TILE_W*1, TILE_H*5, TILE_W, TILE_H)),
@@ -330,9 +350,11 @@ def handle_result_events(event):
     if event.type == pygame.MOUSEBUTTONUP:
         if pygame.Rect(pass_rect).collidepoint(event.pos):
             active_test.result = 'pass'
+            active_test.stop()
             active_test = None
         if pygame.Rect(fail_rect).collidepoint(event.pos):
             active_test.result = 'fail'
+            active_test.stop()
             active_test = None
 
 
