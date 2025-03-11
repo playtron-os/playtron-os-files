@@ -185,6 +185,39 @@ class BluetoothTest(PlaceholderTest):
             FONT.render_to(screen, (FONT_SIZE*1, FONT_SIZE*(i+2)*1.5), device, TEXT_COLOR)
 
 
+class MicroSDTest(PlaceholderTest):
+    def __init__(self):
+        self.name = 'microSD'
+        self.reset()
+        self.start_time = None
+
+    def start(self, screen, font):
+        self.reset()
+        self.start_time = time.perf_counter()
+
+        self.devices = []
+        data = os.popen('lsblk --bytes --raw --output NAME,SIZE | grep "mmcblk0 "').read()
+        for line in data.split('\n'):
+            if not line:
+                continue
+            entry=line.split(' ')
+            size = math.ceil(int(entry[1]) / 1000 / 1000 / 1000)
+            self.devices.append(f' • {size}GB microSD card detected|检测到 {size}GB microSD 卡')
+
+        if len(self.devices) == 0:
+            self.devices.append('<No microSD card detected|未检测到 microSD 卡>')
+
+    def draw(self, screen, font):
+        if time.perf_counter() - self.start_time > 1:
+            self.start(screen, font)
+
+        FONT.render_to(screen, (FONT_SIZE*1, FONT_SIZE*1), 'microSD Cards|microSD 卡', TEXT_COLOR)
+
+        for i in range(len(self.devices)):
+            device = self.devices[i]
+            FONT.render_to(screen, (FONT_SIZE*1, FONT_SIZE*(i+2)*1.5), device, TEXT_COLOR)
+
+
 
 class DisplayTest(PlaceholderTest):
     def __init__(self):
@@ -298,7 +331,7 @@ tests = [
 
     Test(test=TouchscreenTest(),     rect=pygame.Rect(TILE_W*0, TILE_H*4, TILE_W, TILE_H)),
     Test(test=ExternalDisplayTest(), rect=pygame.Rect(TILE_W*1, TILE_H*4, TILE_W, TILE_H)),
-    Test(test=PlaceholderTest(),     rect=pygame.Rect(TILE_W*2, TILE_H*4, TILE_W, TILE_H)), # Storage
+    Test(test=MicroSDTest(),         rect=pygame.Rect(TILE_W*2, TILE_H*4, TILE_W, TILE_H)),
 
     Test(test=PlaceholderTest(), rect=pygame.Rect(TILE_W*0, TILE_H*5, TILE_W, TILE_H)),
     Test(test=PlaceholderTest(), rect=pygame.Rect(TILE_W*1, TILE_H*5, TILE_W, TILE_H)),
