@@ -5,6 +5,8 @@ import dbus
 import math
 import time
 import json
+import threading
+import datetime
 import pygame
 import pygame.freetype
 from dataclasses import dataclass
@@ -354,6 +356,118 @@ class TouchscreenTest(PlaceholderTest):
             self.done = True
 
 
+cancel_rect = pygame.Rect(FONT_SIZE*10, FONT_SIZE*12, FONT_SIZE*16, FONT_SIZE*3)
+
+TEST_SECONDS=8*60*60 # 8 hours
+BUFFER_TIME=10
+
+def run_stressng():
+    os.popen(f'stress-ng --vm 1 --vm-bytes 80% --vm-method all --cpu 0 --verify --timeout {TEST_SECONDS}s &> /tmp/stress.log')
+
+def run_vkmark():
+    os.popen('gamescope --headless -- vkmark --size 16384x16384 --run-forever &> /tmp/vkmark.log')
+
+class StressTest(PlaceholderTest):
+    def __init__(self):
+        self.name = 'Stress Test|压力测试'
+        self.reset()
+        self.start_time = None
+
+    def start(self, screen, font):
+        self.reset()
+        self.start_time = time.perf_counter()
+        self.last_check = time.perf_counter()
+        self.stress_time = None
+        self.vkmark_time = None
+
+        os.popen('rm -f /tmp/stress.log')
+        os.popen('rm -f /tmp/vkmark.log')
+
+        t = threading.Thread(target=run_stressng)
+        t.start()
+
+        t = threading.Thread(target=run_vkmark)
+        t.start()
+
+
+    def stop(self):
+        os.popen('killall stress-ng')
+        os.popen('killall vkmark')
+
+    def check_running(self):
+        # bail immediately if log files failed to be created
+        result1 = os.system('ls /tmp/stress.log &> /dev/null')
+        result2 = os.system('ls /tmp/vkmark.log &> /dev/null')
+        if result1 != 0 or result2 != 0:
+            self.stress_time = -1
+
+        result = os.system('ps -a | grep stress-ng &> /dev/null')
+        if result != 0:
+            self.stress_time = time.perf_counter() - self.start_time
+
+        result = os.system('ps -a | grep vkmark &> /dev/null')
+        if result != 0:
+            self.vkmark_time = time.perf_counter() - self.start_time
+
+    def is_run_successful(self):
+        result = os.system('grep "failed: 0" /tmp/stress.log &> /dev/null')
+        if result != 0:
+            return False
+
+        result = os.system(f'grep "successful run completed" /tmp/stress.log &> /dev/null')
+        if result != 0:
+            return False
+
+        if not self.stress_time or self.stress_time < TEST_SECONDS - BUFFER_TIME:
+            return False
+
+        if not self.vkmark_time or self.vkmark_time < TEST_SECONDS - BUFFER_TIME:
+            return False
+
+        return True
+
+    def draw(self, screen, font):
+        if self.start_time == None:
+            return
+
+        # check status of processes every BUFFER_TIME seconds
+        if time.perf_counter() - self.last_check > BUFFER_TIME:
+            self.check_running()
+            self.last_check = time.perf_counter()
+
+        time_remaining = int(TEST_SECONDS - (time.perf_counter() - self.start_time))
+
+        # add a buffer to ensure the stress test has completed and logs were written
+        if time_remaining < -BUFFER_TIME or self.stress_time != None or self.vkmark_time != None:
+            self.stop()
+            time.sleep(5)
+            self.check_running()
+
+            if self.is_run_successful():
+                self.result = 'pass'
+            else:
+                self.result = 'fail'
+
+            self.start_time = None
+            self.done = True
+
+        if time_remaining < 0:
+            time_remaining = 0
+
+        font.render_to(screen, (FONT_SIZE * 2, FONT_SIZE * 2), 'CPU and GPU stress test in progress|CPU 和 GPU 压力测试正在进行中...', TEXT_COLOR)
+        font.render_to(screen, (FONT_SIZE * 2, FONT_SIZE * 4), 'Time remaining|剩余时间： ' + str(datetime.timedelta(seconds=time_remaining)), TEXT_COLOR)
+
+        pygame.draw.rect(screen, BUTTON_COLOR, cancel_rect)
+        font.render_to(screen, (cancel_rect.x+FONT_SIZE, cancel_rect.y+FONT_SIZE), 'Cancel|取消', TEXT_COLOR)
+
+    def event(self, event):
+        if event.type == pygame.MOUSEBUTTONUP:
+            if pygame.Rect(cancel_rect).collidepoint(event.pos):
+                self.result = 'fail'
+                self.done = True
+
+
+
 
 
 @dataclass
@@ -385,7 +499,7 @@ tests = [
     Test(test=MicroSDTest(),         rect=pygame.Rect(TILE_W*2, TILE_H*4, TILE_W, TILE_H)),
 
     Test(test=USBTest(),         rect=pygame.Rect(TILE_W*0, TILE_H*5, TILE_W, TILE_H)),
-    Test(test=PlaceholderTest(), rect=pygame.Rect(TILE_W*1, TILE_H*5, TILE_W, TILE_H)),
+    Test(test=StressTest(),      rect=pygame.Rect(TILE_W*1, TILE_H*5, TILE_W, TILE_H)),
     Test(test=PlaceholderTest(), rect=pygame.Rect(TILE_W*2, TILE_H*5, TILE_W, TILE_H)),
 
     Test(test=PlaceholderTest(), rect=pygame.Rect(TILE_W*0, TILE_H*6, TILE_W, TILE_H)),
