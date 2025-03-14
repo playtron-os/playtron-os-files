@@ -269,6 +269,42 @@ class USBTest(PlaceholderTest):
             FONT.render_to(screen, (FONT_SIZE*1, FONT_SIZE*(i+2)*1.5), device, TEXT_COLOR)
 
 
+class ScreenBrightnessTest(PlaceholderTest):
+    def __init__(self):
+        self.name = 'Screen Brightness|屏幕亮度'
+        self.reset()
+        self.start_time = None
+        self.brightness = 100
+        self.duration_secs = 10
+
+    def set_brightness(self, value):
+        self.brightness = value
+        os.popen('pkexec hwctl display set-brightness ' + str(value))
+
+    def start(self, screen, font):
+        self.reset()
+        self.start_time = time.perf_counter()
+
+    def draw(self, screen, font):
+        if not self.start_time:
+            return
+        time_elapsed = time.perf_counter() - self.start_time
+        time_remaining = int(self.duration_secs - time_elapsed)
+        if time_remaining < 0:
+            time_remaining = 0
+            self.done = True
+            self.start_time = None
+
+        percent_done = int((time_elapsed / self.duration_secs) * 100.0)
+        if percent_done < 0:
+            percent_done = 0
+        elif percent_done > 100:
+            percent_done = 100
+        if self.brightness != percent_done:
+            self.set_brightness(percent_done)
+
+        font.render_to(screen, (screen.get_width()/2, screen.get_height()/6), str(time_remaining), TEXT_COLOR)
+
 
 class DisplayTest(PlaceholderTest):
     def __init__(self):
@@ -372,7 +408,7 @@ tests = [
     Test(test=PlaceholderTest(), rect=pygame.Rect(TILE_W*1, TILE_H*1, TILE_W, TILE_H)), # Hardware buttons
     Test(test=PlaceholderTest(), rect=pygame.Rect(TILE_W*2, TILE_H*1, TILE_W, TILE_H)), # Battery
 
-    Test(test=PlaceholderTest(),  rect=pygame.Rect(TILE_W*0, TILE_H*2, TILE_W, TILE_H)), # Screen Brightness
+    Test(test=ScreenBrightnessTest(), rect=pygame.Rect(TILE_W*0, TILE_H*2, TILE_W, TILE_H)), # Screen Brightness
     Test(test=DisplayTest(),      rect=pygame.Rect(TILE_W*1, TILE_H*2, TILE_W, TILE_H)),
     Test(test=PlaceholderTest(),  rect=pygame.Rect(TILE_W*2, TILE_H*2, TILE_W, TILE_H)), # Accelerometer
 
