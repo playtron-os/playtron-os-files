@@ -48,7 +48,7 @@ class PlaceholderTest:
 
 
 # Test video taken from: https://test-videos.co.uk/bigbuckbunny/webm-vp9
-TEST_VIDEO_PATH='../../share/playtron/test_video.webm'
+TEST_VIDEO_PATH='/usr/share/playtron/test_video.webm'
 
 class ExternalDisplayTest(PlaceholderTest):
     def __init__(self):
