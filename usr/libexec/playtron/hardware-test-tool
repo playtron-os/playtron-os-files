@@ -78,6 +78,59 @@ class InputTest(PlaceholderTest):
         self.done = True
 
 
+class BatteryTest(PlaceholderTest):
+    def __init__(self):
+        self.name = 'Battery|电池'
+        self.reset()
+        self.start_time = None
+        self.battery_path = '/sys/class/power_supply'
+        self.battery_name = None
+        self.battery_percentage = None
+        self.battery_state_text = None
+        self.battery_charging_speed = None
+
+    def start(self, screen, font):
+        self.reset()
+        self.start_time = time.perf_counter()
+
+        for file_name in os.listdir(self.battery_path):
+            if 'BAT' in file_name:
+                self.battery_name = file_name
+        if not self.battery_name:
+            self.result = 'fail'
+            self.done = True
+
+        with open(self.battery_path + '/' + self.battery_name + '/' + 'capacity', 'r') as file_name:
+            self.battery_percentage = file_name.read().strip() + '%'
+
+        # State is either "Charging", "Discharging", or "Not charging".
+        with open(self.battery_path + '/' + self.battery_name + '/' + 'status', 'r') as file_name:
+            battery_state = file_name.read().strip()
+        if battery_state == "Charging":
+            self.battery_state_text = 'Charging|充电'
+        elif battery_state == "Discharging":
+            self.battery_state_text = 'Discharging|放电'
+        else:
+            self.battery_state_text = '?'
+
+        battery_charging_speed_cmd = os.popen(
+            'upower -i /org/freedesktop/UPower/devices/battery_' + self.battery_name + ' | grep energy-rate: | awk \'{print $2}\' | cut -d. -f1')
+        self.battery_charging_speed = battery_charging_speed_cmd.read().strip() + 'W'
+        battery_charging_speed_cmd.close()
+
+    def draw(self, screen, font):
+        if time.perf_counter() - self.start_time > 1:
+            self.start(screen, font)
+        FONT.render_to(screen, (FONT_SIZE*1, FONT_SIZE*1), 'Battery percentage|电池百分比', TEXT_COLOR)
+        FONT.render_to(screen, (FONT_SIZE*18, FONT_SIZE*1), 'Charging?|充电?', TEXT_COLOR)
+        FONT.render_to(screen, (FONT_SIZE*31, FONT_SIZE*1), 'Speed|速度', TEXT_COLOR)
+        FONT.render_to(screen, (FONT_SIZE*1, FONT_SIZE*3), self.battery_percentage, TEXT_COLOR)
+        FONT.render_to(screen, (FONT_SIZE*18, FONT_SIZE*3), self.battery_state_text, TEXT_COLOR)
+        FONT.render_to(screen, (FONT_SIZE*31, FONT_SIZE*3), self.battery_charging_speed, TEXT_COLOR)
+        pygame.draw.rect(screen, BUTTON_COLOR, cancel_rect)
+        font.render_to(screen, (cancel_rect.x+FONT_SIZE, cancel_rect.y+FONT_SIZE), 'Cancel|取消', TEXT_COLOR)
+
+
 class ExitAction(PlaceholderTest):
     def __init__(self):
         self.name = 'Exit|退出'
@@ -519,7 +572,7 @@ tests = [
 
     Test(test=InputTest(), rect=pygame.Rect(TILE_W*0, TILE_H*1, TILE_W, TILE_H)),
     Test(test=PlaceholderTest(), rect=pygame.Rect(TILE_W*1, TILE_H*1, TILE_W, TILE_H)), # Hardware buttons
-    Test(test=PlaceholderTest(), rect=pygame.Rect(TILE_W*2, TILE_H*1, TILE_W, TILE_H)), # Battery
+    Test(test=BatteryTest(), rect=pygame.Rect(TILE_W*2, TILE_H*1, TILE_W, TILE_H)),
 
     Test(test=ScreenBrightnessTest(), rect=pygame.Rect(TILE_W*0, TILE_H*2, TILE_W, TILE_H)), # Screen Brightness
     Test(test=DisplayTest(),      rect=pygame.Rect(TILE_W*1, TILE_H*2, TILE_W, TILE_H)),
