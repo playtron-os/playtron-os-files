@@ -217,6 +217,57 @@ class MicroSDTest(PlaceholderTest):
             device = self.devices[i]
             FONT.render_to(screen, (FONT_SIZE*1, FONT_SIZE*(i+2)*1.5), device, TEXT_COLOR)
 
+class USBTest(PlaceholderTest):
+    def __init__(self):
+        self.name = 'USB'
+        self.reset()
+        self.start_time = None
+
+    def start(self, screen, font):
+        self.reset()
+        self.start_time = time.perf_counter()
+
+        EXCLUDE_DEVICES = [
+            "", # for join formatting
+
+            # common built in devices
+            "1d6b:0002", # root hub
+            "1d6b:0003", # root hub
+
+            # Aya Neo 2/2S built in devices
+            "045e:028e",
+            "8087:0029",
+            "8087:0032",
+            "2541:0236",
+
+            # Aya Neo dock devices
+            "2109:2817",
+            "1a40:0801",
+            "2109:0817",
+            "0bda:8153",
+        ]
+
+        self.devices = []
+        data = os.popen('lsusb' + ' | grep -v '.join(EXCLUDE_DEVICES)).read()
+        for line in data.split('\n'):
+            if not line:
+                continue
+            entry=line.split(' ')
+            self.devices.append(' '.join(entry[5:]))
+
+        if len(self.devices) == 0:
+            self.devices.append('<No USB devices connected|没有连接 USB 设备>')
+
+    def draw(self, screen, font):
+        if time.perf_counter() - self.start_time > 1:
+            self.start(screen, font)
+
+        FONT.render_to(screen, (FONT_SIZE*1, FONT_SIZE*1), 'USB Devices|USB设备', TEXT_COLOR)
+
+        for i in range(len(self.devices)):
+            device = self.devices[i]
+            FONT.render_to(screen, (FONT_SIZE*1, FONT_SIZE*(i+2)*1.5), device, TEXT_COLOR)
+
 
 
 class DisplayTest(PlaceholderTest):
@@ -333,7 +384,7 @@ tests = [
     Test(test=ExternalDisplayTest(), rect=pygame.Rect(TILE_W*1, TILE_H*4, TILE_W, TILE_H)),
     Test(test=MicroSDTest(),         rect=pygame.Rect(TILE_W*2, TILE_H*4, TILE_W, TILE_H)),
 
-    Test(test=PlaceholderTest(), rect=pygame.Rect(TILE_W*0, TILE_H*5, TILE_W, TILE_H)),
+    Test(test=USBTest(),         rect=pygame.Rect(TILE_W*0, TILE_H*5, TILE_W, TILE_H)),
     Test(test=PlaceholderTest(), rect=pygame.Rect(TILE_W*1, TILE_H*5, TILE_W, TILE_H)),
     Test(test=PlaceholderTest(), rect=pygame.Rect(TILE_W*2, TILE_H*5, TILE_W, TILE_H)),
 
