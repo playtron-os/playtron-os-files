@@ -128,8 +128,6 @@ class BatteryTest(PlaceholderTest):
         FONT.render_to(screen, (FONT_SIZE*1, FONT_SIZE*3), self.battery_percentage, TEXT_COLOR)
         FONT.render_to(screen, (FONT_SIZE*18, FONT_SIZE*3), self.battery_state_text, TEXT_COLOR)
         FONT.render_to(screen, (FONT_SIZE*31, FONT_SIZE*3), self.battery_charging_speed, TEXT_COLOR)
-        pygame.draw.rect(screen, BUTTON_COLOR, cancel_rect)
-        font.render_to(screen, (cancel_rect.x+FONT_SIZE, cancel_rect.y+FONT_SIZE), 'Cancel|取消', TEXT_COLOR)
 
 
 class ExitAction(PlaceholderTest):
