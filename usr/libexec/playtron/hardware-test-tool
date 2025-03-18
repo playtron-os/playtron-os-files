@@ -1,4 +1,4 @@
-#! /usr/bin/env python3
+#!/usr/bin/python3
 
 import os
 import dbus
@@ -9,6 +9,7 @@ import threading
 import datetime
 import pygame
 import pygame.freetype
+from pathlib import Path
 from dataclasses import dataclass
 
 pygame.init()
@@ -398,10 +399,10 @@ TEST_SECONDS=8*60*60 # 8 hours
 BUFFER_TIME=10
 
 def run_stressng():
-    os.popen(f'stress-ng --vm 1 --vm-bytes 80% --vm-method all --cpu 0 --verify --timeout {TEST_SECONDS}s &> /tmp/stress.log')
+    os.system(f'/usr/libexec/playtron/stress-ng-runner /tmp/stress.log {TEST_SECONDS}')
 
 def run_vkmark():
-    os.popen('gamescope --headless -- vkmark --size 16384x16384 --run-forever &> /tmp/vkmark.log')
+    os.system('/usr/libexec/playtron/vkmark-runner /tmp/vkmark.log')
 
 class StressTest(PlaceholderTest):
     def __init__(self):
@@ -432,16 +433,16 @@ class StressTest(PlaceholderTest):
 
     def check_running(self):
         # bail immediately if log files failed to be created
-        result1 = os.system('ls /tmp/stress.log &> /dev/null')
-        result2 = os.system('ls /tmp/vkmark.log &> /dev/null')
-        if result1 != 0 or result2 != 0:
+        stress_log = Path('/tmp/stress.log')
+        vkmark_log = Path('/tmp/vkmark.log')
+        if not stress_log.is_file() or not vkmark_log.is_file():
             self.stress_time = -1
 
-        result = os.system('ps -a | grep stress-ng &> /dev/null')
+        result = os.system('ps -ax | grep stress-ng | grep -v grep &> /dev/null')
         if result != 0:
             self.stress_time = time.perf_counter() - self.start_time
 
-        result = os.system('ps -a | grep vkmark &> /dev/null')
+        result = os.system('ps -ax | grep vkmark | grep -v grep &> /dev/null')
         if result != 0:
             self.vkmark_time = time.perf_counter() - self.start_time
 
