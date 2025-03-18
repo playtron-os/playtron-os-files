@@ -99,6 +99,7 @@ class BatteryTest(PlaceholderTest):
         if not self.battery_name:
             self.result = 'fail'
             self.done = True
+            return
 
         with open(self.battery_path + '/' + self.battery_name + '/' + 'capacity', 'r') as file_name:
             self.battery_percentage = file_name.read().strip() + '%'
@@ -114,7 +115,7 @@ class BatteryTest(PlaceholderTest):
             self.battery_state_text = '?'
 
         battery_charging_speed_cmd = os.popen(
-            'upower -i /org/freedesktop/UPower/devices/battery_' + self.battery_name + ' | grep energy-rate: | awk \'{print $2}\' | cut -d. -f1')
+            'upower -i /org/freedesktop/UPower/devices/DisplayDevice ' + ' | grep energy-rate: | awk \'{print $2}\' | cut -d. -f1')
         self.battery_charging_speed = battery_charging_speed_cmd.read().strip() + 'W'
         battery_charging_speed_cmd.close()
 
