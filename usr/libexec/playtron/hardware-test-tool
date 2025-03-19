@@ -9,6 +9,7 @@ import threading
 import datetime
 import pygame
 import pygame.freetype
+import subprocess
 from dataclasses import dataclass
 
 pygame.init()
@@ -391,6 +392,87 @@ class DisplayTest(PlaceholderTest):
             self.done = True
 
 
+class SpeakersTest(PlaceholderTest):
+    def __init__(self):
+        self.name = 'Speakers|扬声器'
+        self.reset()
+        self.start_time = None
+        self.time_count = 0
+        self.wav_file_name = '/tmp/test_record.wav'
+        self.msg_headphones_hint = 'Unplug headphones|拔下耳机'
+        self.audio_output_started = False
+        self.audio_input_started = False
+        self.cleanup_started = False
+
+    def start(self, screen, font):
+        self.reset()
+        self.start_time = time.perf_counter()
+
+    def audio_output(self,):
+        # 5.7 seconds is the exact amount of time for the "Front right. Front left." voice line to happen twice.
+        os.popen('timeout 5.7s speaker-test -c 2 -t wav')
+
+    def audio_input_record(self):
+        # Record from the microphone for 6 seconds.
+        subprocess.Popen('arecord -f cd -d 6 ' + self.wav_file_name, shell=True)
+
+    def audio_input_playback(self):
+        os.popen('aplay ' + self.wav_file_name)
+
+    def cleanup(self):
+        try:
+            os.remove(self.wav_file_name)
+        except:
+            print('File does not exist: ' + self.wav_file_name)
+
+    def draw(self, screen, font):
+        if time.perf_counter() - self.start_time > 1:
+            self.start(screen, font)
+            self.time_count += 1
+
+        # Lower the volume first so it is not at 100%.
+        os.popen('hwctl audio set-volume 50')
+
+        # Start with the audio output test for the first 5.9 seconds (so the 5.7 seconds test completes).
+        if self.time_count < 6:
+            FONT.render_to(screen, (FONT_SIZE*1, FONT_SIZE*1), 'Audio output|音频输出', TEXT_COLOR)
+            FONT.render_to(screen, (FONT_SIZE*1, FONT_SIZE*3), self.msg_headphones_hint, TEXT_COLOR)
+            FONT.render_to(screen, (FONT_SIZE*1, FONT_SIZE*5), 'Listen for audio now|现在收听音频', TEXT_COLOR)
+            if not self.audio_output_started:
+                self.audio_output_started = True
+                self.audio_output()
+        elif self.time_count >= 6 and self.time_count <= 13:
+            FONT.render_to(screen, (FONT_SIZE*1, FONT_SIZE*1), 'Audio input|音频输入', TEXT_COLOR)
+            FONT.render_to(screen, (FONT_SIZE*1, FONT_SIZE*3), self.msg_headphones_hint, TEXT_COLOR)
+            FONT.render_to(screen, (FONT_SIZE*1, FONT_SIZE*5), 'Recording audio now|现在录音', TEXT_COLOR)
+            if not self.audio_input_started:
+                self.audio_input_started = True
+                self.audio_input_record()
+        elif self.time_count >= 14 and self.time_count <= 20:
+            FONT.render_to(screen, (FONT_SIZE*1, FONT_SIZE*1), 'Audio input|音频输入', TEXT_COLOR)
+            FONT.render_to(screen, (FONT_SIZE*1, FONT_SIZE*3), self.msg_headphones_hint, TEXT_COLOR)
+            FONT.render_to(screen, (FONT_SIZE*1, FONT_SIZE*5), 'Playback recording now|播放录音', TEXT_COLOR)
+            if self.audio_input_started:
+                self.audio_input_started = False
+                self.audio_input_playback()
+        else:
+            if not self.cleanup_started:
+                self.cleanup_started = True
+                self.cleanup()
+
+
+class HeadphonesTest(SpeakersTest):
+    def __init__(self):
+        self.name = 'Headphones|耳机'
+        self.reset()
+        self.start_time = None
+        self.time_count = 0
+        self.wav_file_name = '/tmp/test_record.wav'
+        self.msg_headphones_hint = 'Plug in headphones|插入耳机'
+        self.audio_output_started = False
+        self.audio_input_started = False
+        self.cleanup_started = False
+
 
 class TouchscreenTest(PlaceholderTest):
     def __init__(self):
@@ -578,8 +660,8 @@ tests = [
     Test(test=PlaceholderTest(),  rect=pygame.Rect(TILE_W*2, TILE_H*2, TILE_W, TILE_H)), # Accelerometer
 
     Test(test=PlaceholderTest(), rect=pygame.Rect(TILE_W*0, TILE_H*3, TILE_W, TILE_H)), # Gyroscope
-    Test(test=PlaceholderTest(), rect=pygame.Rect(TILE_W*1, TILE_H*3, TILE_W, TILE_H)), # Speakers
-    Test(test=PlaceholderTest(), rect=pygame.Rect(TILE_W*2, TILE_H*3, TILE_W, TILE_H)), # Headphones
+    Test(test=SpeakersTest(), rect=pygame.Rect(TILE_W*1, TILE_H*3, TILE_W, TILE_H)),
+    Test(test=HeadphonesTest(), rect=pygame.Rect(TILE_W*2, TILE_H*3, TILE_W, TILE_H)),
 
     Test(test=TouchscreenTest(),     rect=pygame.Rect(TILE_W*0, TILE_H*4, TILE_W, TILE_H)),
     Test(test=ExternalDisplayTest(), rect=pygame.Rect(TILE_W*1, TILE_H*4, TILE_W, TILE_H)),
