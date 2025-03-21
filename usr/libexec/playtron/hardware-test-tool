@@ -1,4 +1,4 @@
-#! /usr/bin/env python3
+#!/usr/bin/python3
 
 import os
 import dbus
@@ -9,6 +9,7 @@ import threading
 import datetime
 import pygame
 import pygame.freetype
+from pathlib import Path
 import subprocess
 from dataclasses import dataclass
 
@@ -532,72 +533,62 @@ class TouchscreenTest(PlaceholderTest):
             self.done = True
 
 
-cancel_rect = pygame.Rect(FONT_SIZE*10, FONT_SIZE*12, FONT_SIZE*16, FONT_SIZE*3)
+
 
 TEST_SECONDS=8*60*60 # 8 hours
 BUFFER_TIME=10
-
-def run_stressng():
-    os.popen(f'stress-ng --vm 1 --vm-bytes 80% --vm-method all --cpu 0 --verify --timeout {TEST_SECONDS}s &> /tmp/stress.log')
-
-def run_vkmark():
-    os.popen('gamescope --headless -- vkmark --size 16384x16384 --run-forever &> /tmp/vkmark.log')
-
+CPU_LOG='/tmp/cpu+ram.log'
 class StressTest(PlaceholderTest):
     def __init__(self):
         self.name = 'Stress Test|压力测试'
         self.reset()
         self.start_time = None
+        self.cancel_rect = pygame.Rect(FONT_SIZE*14, FONT_SIZE*22, FONT_SIZE*16, FONT_SIZE*3)
 
     def start(self, screen, font):
         self.reset()
         self.start_time = time.perf_counter()
         self.last_check = time.perf_counter()
         self.stress_time = None
-        self.vkmark_time = None
 
-        os.popen('rm -f /tmp/stress.log')
-        os.popen('rm -f /tmp/vkmark.log')
+        os.popen('busctl set-property org.shadowblip.PowerStation /org/shadowblip/Performance/GPU/card0 org.shadowblip.GPU.Card.TDP TDP "d" 30')
 
-        t = threading.Thread(target=run_stressng)
-        t.start()
+        try:
+            os.remove(CPU_LOG)
+        except:
+            pass
 
-        t = threading.Thread(target=run_vkmark)
-        t.start()
-
+        os.popen(f'/usr/libexec/playtron/stress-test-cpu+ram {CPU_LOG} {TEST_SECONDS}')
+        os.popen('/usr/libexec/playtron/stress-test-gpu')
+        os.popen('/usr/libexec/playtron/stress-test-disk')
+        os.popen('/usr/libexec/playtron/stress-test-speaker')
 
     def stop(self):
-        os.popen('killall stress-ng')
-        os.popen('killall vkmark')
+        os.popen('killall stress-test-cpu+ram')
+        os.popen('killall stress-test-gpu')
+        os.popen('killall stress-test-disk')
+        os.popen('killall stress-test-speaker')
 
     def check_running(self):
-        # bail immediately if log files failed to be created
-        result1 = os.system('ls /tmp/stress.log &> /dev/null')
-        result2 = os.system('ls /tmp/vkmark.log &> /dev/null')
-        if result1 != 0 or result2 != 0:
+        # bail immediately if cpu log file failed to be created
+        cpu_log = Path(CPU_LOG)
+        if not cpu_log.is_file():
             self.stress_time = -1
 
-        result = os.system('ps -a | grep stress-ng &> /dev/null')
+        result = os.system('ps -ax | grep stress-test-cpu+ram | grep -v grep &> /dev/null')
         if result != 0:
             self.stress_time = time.perf_counter() - self.start_time
 
-        result = os.system('ps -a | grep vkmark &> /dev/null')
-        if result != 0:
-            self.vkmark_time = time.perf_counter() - self.start_time
-
     def is_run_successful(self):
-        result = os.system('grep "failed: 0" /tmp/stress.log &> /dev/null')
+        result = os.system(f'grep "failed: 0" {CPU_LOG} &> /dev/null')
         if result != 0:
             return False
 
-        result = os.system(f'grep "successful run completed" /tmp/stress.log &> /dev/null')
+        result = os.system(f'grep "successful run completed" {CPU_LOG} &> /dev/null')
         if result != 0:
             return False
 
         if not self.stress_time or self.stress_time < TEST_SECONDS - BUFFER_TIME:
-            return False
-
-        if not self.vkmark_time or self.vkmark_time < TEST_SECONDS - BUFFER_TIME:
             return False
 
         return True
@@ -614,7 +605,7 @@ class StressTest(PlaceholderTest):
         time_remaining = int(TEST_SECONDS - (time.perf_counter() - self.start_time))
 
         # add a buffer to ensure the stress test has completed and logs were written
-        if time_remaining < -BUFFER_TIME or self.stress_time != None or self.vkmark_time != None:
+        if time_remaining < -BUFFER_TIME or self.stress_time != None:
             self.stop()
             time.sleep(5)
             self.check_running()
@@ -630,15 +621,20 @@ class StressTest(PlaceholderTest):
         if time_remaining < 0:
             time_remaining = 0
 
-        font.render_to(screen, (FONT_SIZE * 2, FONT_SIZE * 2), 'CPU and GPU stress test in progress|CPU 和 GPU 压力测试正在进行中...', TEXT_COLOR)
-        font.render_to(screen, (FONT_SIZE * 2, FONT_SIZE * 4), 'Time remaining|剩余时间： ' + str(datetime.timedelta(seconds=time_remaining)), TEXT_COLOR)
+        font.render_to(screen, (FONT_SIZE * 2, FONT_SIZE * 2), 'Stress test in progress|压力测试正在进行中...', TEXT_COLOR)
+        font.render_to(screen, (FONT_SIZE * 2, FONT_SIZE * 4), 'CPU|处理器', TEXT_COLOR)
+        font.render_to(screen, (FONT_SIZE * 2, FONT_SIZE * 6), 'RAM|内存', TEXT_COLOR)
+        font.render_to(screen, (FONT_SIZE * 2, FONT_SIZE * 8), 'GPU|图形处理器', TEXT_COLOR)
+        font.render_to(screen, (FONT_SIZE * 2, FONT_SIZE * 10), 'Disk|存储', TEXT_COLOR)
+        font.render_to(screen, (FONT_SIZE * 2, FONT_SIZE * 12), 'Speakers|演讲嘉宾', TEXT_COLOR)
+        font.render_to(screen, (FONT_SIZE * 2, FONT_SIZE * 16), 'Time remaining|剩余时间： ' + str(datetime.timedelta(seconds=time_remaining)), TEXT_COLOR)
 
-        pygame.draw.rect(screen, BUTTON_COLOR, cancel_rect)
-        font.render_to(screen, (cancel_rect.x+FONT_SIZE, cancel_rect.y+FONT_SIZE), 'Cancel|取消', TEXT_COLOR)
+        pygame.draw.rect(screen, BUTTON_COLOR, self.cancel_rect)
+        font.render_to(screen, (self.cancel_rect.x+FONT_SIZE, self.cancel_rect.y+FONT_SIZE), 'Cancel|取消', TEXT_COLOR)
 
     def event(self, event):
         if event.type == pygame.MOUSEBUTTONUP:
-            if pygame.Rect(cancel_rect).collidepoint(event.pos):
+            if pygame.Rect(self.cancel_rect).collidepoint(event.pos):
                 self.stress_time = -1
 
 
