@@ -400,6 +400,7 @@ class SpeakersTest(PlaceholderTest):
         self.time_count = 0
         self.wav_file_name = '/tmp/test_record.wav'
         self.msg_headphones_hint = 'Unplug headphones|拔下耳机'
+        self.volume_level = '75'
         self.audio_output_started = False
         self.audio_input_started = False
         self.cleanup_started = False
@@ -408,7 +409,12 @@ class SpeakersTest(PlaceholderTest):
         self.reset()
         self.start_time = time.perf_counter()
 
-    def audio_output(self,):
+    def lower_volume(self):
+        # Lower the volume first so it is not at 100%.
+        os.popen('hwctl audio set-volume ' + self.volume_level)
+
+    def audio_output(self):
+        self.lower_volume()
         # 5.7 seconds is the exact amount of time for the "Front right. Front left." voice line to happen twice.
         os.popen('timeout 5.7s speaker-test -c 2 -t wav')
 
@@ -417,6 +423,7 @@ class SpeakersTest(PlaceholderTest):
         subprocess.Popen('arecord -f cd -d 6 ' + self.wav_file_name, shell=True)
 
     def audio_input_playback(self):
+        self.lower_volume()
         os.popen('aplay ' + self.wav_file_name)
 
     def cleanup(self):
@@ -424,14 +431,17 @@ class SpeakersTest(PlaceholderTest):
             os.remove(self.wav_file_name)
         except:
             print('File does not exist: ' + self.wav_file_name)
+        self.start_time = None
+        self.time_count = 0
+        self.audio_output_started = False
+        self.audio_input_started = False
+        self.cleanup_started = False
+        self.done = True
 
     def draw(self, screen, font):
         if time.perf_counter() - self.start_time > 1:
             self.start(screen, font)
             self.time_count += 1
-
-        # Lower the volume first so it is not at 100%.
-        os.popen('hwctl audio set-volume 50')
 
         # Start with the audio output test for the first 5.9 seconds (so the 5.7 seconds test completes).
         if self.time_count < 6:
@@ -469,6 +479,7 @@ class HeadphonesTest(SpeakersTest):
         self.time_count = 0
         self.wav_file_name = '/tmp/test_record.wav'
         self.msg_headphones_hint = 'Plug in headphones|插入耳机'
+        self.volume_level = '50'
         self.audio_output_started = False
         self.audio_input_started = False
         self.cleanup_started = False
