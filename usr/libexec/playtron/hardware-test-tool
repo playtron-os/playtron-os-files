@@ -664,18 +664,37 @@ class SerialTest(PlaceholderTest):
 
         # Open the serial interface
         reader = open(DEVICE, "rb")
-        writer = open(DEVICE, "wb")
 
-        # Write a payload
-        writer.write(DATA)
-        writer.close()
+        # Write a payload. Writing the payload multiple times is required for
+        # older AYANEO 2S devices, which will only reply after a certain
+        # number of requests.
+        for _ in range(10):
+            writer = open(DEVICE, "wb")
+            writer.write(DATA)
+            writer.close()
+            time.sleep(0.1)
 
-        # Read the response
-        response = reader.read(5)
-        if response == EXPECTED_RESPONSE:
-            self.result = "pass"
-        else:
-            self.result = "fail"
+        # Read the response. Look for the header byte in the response to see
+        # if the request was successful.
+        for _ in range(10):
+            header = reader.read(1)
+            if header != b'\xE7':
+                continue
+            response = header + reader.read(4)
+            if len(response) != 5:
+                self.result = "fail"
+                break
+
+            # Byte 3 is the version, which can vary depending on model
+            if response[0] == EXPECTED_RESPONSE[0] and \
+               response[1] == EXPECTED_RESPONSE[1] and \
+               response[2] == EXPECTED_RESPONSE[2] and \
+               response[4] == EXPECTED_RESPONSE[4]:
+                self.result = "pass"
+            else:
+                self.result = "fail"
+            break
+
         reader.close()
 
     def draw(self, screen, font):
