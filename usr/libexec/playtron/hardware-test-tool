@@ -397,7 +397,6 @@ class SpeakersTest(PlaceholderTest):
         self.name = 'Speakers|扬声器'
         self.reset()
         self.start_time = None
-        self.time_count = 0
         self.wav_file_name = '/tmp/test_record.wav'
         self.msg_headphones_hint = 'Unplug headphones|拔下耳机'
         self.volume_level = '75'
@@ -432,33 +431,30 @@ class SpeakersTest(PlaceholderTest):
         except:
             print('File does not exist: ' + self.wav_file_name)
         self.start_time = None
-        self.time_count = 0
         self.audio_output_started = False
         self.audio_input_started = False
         self.cleanup_started = False
         self.done = True
 
     def draw(self, screen, font):
-        if time.perf_counter() - self.start_time > 1:
-            self.start(screen, font)
-            self.time_count += 1
+        elapsed_time = time.perf_counter() - self.start_time
 
         # Start with the audio output test for the first 5.9 seconds (so the 5.7 seconds test completes).
-        if self.time_count < 6:
+        if elapsed_time < 6:
             FONT.render_to(screen, (FONT_SIZE*1, FONT_SIZE*1), 'Audio output|音频输出', TEXT_COLOR)
             FONT.render_to(screen, (FONT_SIZE*1, FONT_SIZE*3), self.msg_headphones_hint, TEXT_COLOR)
             FONT.render_to(screen, (FONT_SIZE*1, FONT_SIZE*5), 'Listen for audio now|现在收听音频', TEXT_COLOR)
             if not self.audio_output_started:
                 self.audio_output_started = True
                 self.audio_output()
-        elif self.time_count >= 6 and self.time_count <= 13:
+        elif elapsed_time >= 6 and elapsed_time <= 13:
             FONT.render_to(screen, (FONT_SIZE*1, FONT_SIZE*1), 'Audio input|音频输入', TEXT_COLOR)
             FONT.render_to(screen, (FONT_SIZE*1, FONT_SIZE*3), self.msg_headphones_hint, TEXT_COLOR)
             FONT.render_to(screen, (FONT_SIZE*1, FONT_SIZE*5), 'Recording audio now|现在录音', TEXT_COLOR)
             if not self.audio_input_started:
                 self.audio_input_started = True
                 self.audio_input_record()
-        elif self.time_count >= 14 and self.time_count <= 20:
+        elif elapsed_time >= 14 and elapsed_time <= 20:
             FONT.render_to(screen, (FONT_SIZE*1, FONT_SIZE*1), 'Audio input|音频输入', TEXT_COLOR)
             FONT.render_to(screen, (FONT_SIZE*1, FONT_SIZE*3), self.msg_headphones_hint, TEXT_COLOR)
             FONT.render_to(screen, (FONT_SIZE*1, FONT_SIZE*5), 'Playback recording now|播放录音', TEXT_COLOR)
@@ -476,7 +472,6 @@ class HeadphonesTest(SpeakersTest):
         self.name = 'Headphones|耳机'
         self.reset()
         self.start_time = None
-        self.time_count = 0
         self.wav_file_name = '/tmp/test_record.wav'
         self.msg_headphones_hint = 'Plug in headphones|插入耳机'
         self.volume_level = '50'
