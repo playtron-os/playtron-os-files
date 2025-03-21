@@ -638,7 +638,53 @@ class StressTest(PlaceholderTest):
                 self.stress_time = -1
 
 
+BAUD_RATE = 115200
+DEVICE = "/dev/ttyS2"
+DATA = b'\xE7\x00\x00\x22\x02\x00\x00\x00\x0F\x33\xED'
+EXPECTED_RESPONSE = b'\xE7\x55\xAA\x01\xED'
+class SerialTest(PlaceholderTest):
+    def __init__(self):
+        self.name = 'Serial Test|串行端口'
+        self.reset()
+        self.start_time = None
 
+    def start(self, screen, font):
+        self.reset()
+        self.start_time = time.perf_counter()
+
+        # Configure the serial port
+        cmd = "stty -F {device} {baud_rate}".format(device=DEVICE, baud_rate=BAUD_RATE)
+        if os.system(cmd) != 0:
+            self.result = "fail"
+            return
+        cmd = "stty -F {device} raw".format(device=DEVICE)
+        if os.system(cmd) != 0:
+            self.result = "fail"
+            return
+
+        # Open the serial interface
+        reader = open(DEVICE, "rb")
+        writer = open(DEVICE, "wb")
+
+        # Write a payload
+        writer.write(DATA)
+        writer.close()
+
+        # Read the response
+        response = reader.read(5)
+        if response == EXPECTED_RESPONSE:
+            self.result = "pass"
+        else:
+            self.result = "fail"
+        reader.close()
+
+    def draw(self, screen, font):
+        if self.start_time is None:
+            return
+        text = "Failed|失败的"
+        if self.result == "pass":
+            text = "Success|成功"
+        font.render_to(screen, (FONT_SIZE * 2, FONT_SIZE * 2), text, TEXT_COLOR)
 
 
 @dataclass
@@ -673,7 +719,7 @@ tests = [
     Test(test=StressTest(),      rect=pygame.Rect(TILE_W*1, TILE_H*5, TILE_W, TILE_H)),
     Test(test=PlaceholderTest(), rect=pygame.Rect(TILE_W*2, TILE_H*5, TILE_W, TILE_H)),
 
-    Test(test=PlaceholderTest(), rect=pygame.Rect(TILE_W*0, TILE_H*6, TILE_W, TILE_H)),
+    Test(test=SerialTest(),      rect=pygame.Rect(TILE_W*0, TILE_H*6, TILE_W, TILE_H)),
     Test(test=ExitAction(),      rect=pygame.Rect(TILE_W*1, TILE_H*6, TILE_W, TILE_H)),
     Test(test=PowerOffAction(),  rect=pygame.Rect(TILE_W*2, TILE_H*6, TILE_W, TILE_H)),
 ]

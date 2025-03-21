@@ -1,0 +1,9 @@
+# Only apply permissions if the serial device appears on a SuiPlay0X1
+KERNEL=="ttyS2", IMPORT{program}="/usr/bin/sh -c 'echo -n ID_PRODUCT_NAME= && cat /sys/class/dmi/id/product_name'"
+KERNEL=="ttyS2", ENV{ID_PRODUCT_NAME}=="SuiPlay0X1", GOTO="suiplay0x1_valid"
+GOTO="suiplay0x1_end"
+
+# Apply permissions to the serial interface if this is a valid SuiPlay0X1 device
+LABEL="suiplay0x1_valid"
+KERNEL=="ttyS2", SUBSYSTEM=="tty", MODE:="0660", OWNER:="playtron", GROUP:="playtron"
+LABEL="suiplay0x1_end"
