@@ -1,3 +1,0 @@
-#!/usr/bin/bash
-
-gamescope --headless -- vkmark --size 16384x16384 --run-forever &> ${1}
