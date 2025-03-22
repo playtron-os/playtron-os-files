@@ -448,14 +448,14 @@ class SpeakersTest(PlaceholderTest):
             if not self.audio_output_started:
                 self.audio_output_started = True
                 self.audio_output()
-        elif elapsed_time >= 6 and elapsed_time <= 13:
+        elif elapsed_time >= 6 and elapsed_time < 13:
             FONT.render_to(screen, (FONT_SIZE*1, FONT_SIZE*1), 'Audio input|音频输入', TEXT_COLOR)
             FONT.render_to(screen, (FONT_SIZE*1, FONT_SIZE*3), self.msg_headphones_hint, TEXT_COLOR)
             FONT.render_to(screen, (FONT_SIZE*1, FONT_SIZE*5), 'Recording audio now|现在录音', TEXT_COLOR)
             if not self.audio_input_started:
                 self.audio_input_started = True
                 self.audio_input_record()
-        elif elapsed_time >= 14 and elapsed_time <= 20:
+        elif elapsed_time >= 13 and elapsed_time <= 20:
             FONT.render_to(screen, (FONT_SIZE*1, FONT_SIZE*1), 'Audio input|音频输入', TEXT_COLOR)
             FONT.render_to(screen, (FONT_SIZE*1, FONT_SIZE*3), self.msg_headphones_hint, TEXT_COLOR)
             FONT.render_to(screen, (FONT_SIZE*1, FONT_SIZE*5), 'Playback recording now|播放录音', TEXT_COLOR)
