@@ -1,10 +1,10 @@
 enable clatd-ipv6-check.service
-enable create-swap.service
 enable sddm.service
 enable NetworkManager-wait-online.service
 enable resize-root-file-system.service
 enable inputplumber.service
 enable powerstation.service
+enable systemd-zram-setup@zram0.service
 enable wake-up-listener.service
 disable firewalld.service
 disable systemd-oomd.service

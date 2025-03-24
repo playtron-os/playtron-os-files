@@ -22,14 +22,10 @@ Resize root file system:
 - ./usr/bin/resize-root-file-system.sh
     - A script to resize the root file system to use all available space. Assumes the file system is Btrfs
 
-Swap creation:
+zram creation:
 
 - ./usr/lib/sysctl.d/50-playtron.conf
-    - Lower the swappiness to 1
-- ./usr/lib/systemd/system/create-swap.service
-    - A systemd service file to run the `create-swap.sh` script once (after the `resize-root-file-system` service finishes) and then disable itself so the service does not run again
-- ./usr/bin/create-swap.sh
-    - A script to create swap if the RAM size is less than 32 GB
+    - Configure optimal swap settings for zram
 
 Network configurations:
 
