@@ -338,32 +338,32 @@ function validate_value {
 	fi
 }
 
-function audio {
-	case $1 in
+function audio_common {
+	case $2 in
 		"raise-volume")
-			wpctl set-volume --limit 1.0 @DEFAULT_AUDIO_SINK@ 5%+
+			wpctl set-volume --limit 1.0 $1 5%+
 			;;
 		"lower-volume")
-			wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-
+			wpctl set-volume $1 5%-
 			;;
 		"get-volume")
-			float=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | cut -d: -f2)
+			float=$(wpctl get-volume $1 | cut -d: -f2)
 			echo "scale=0; $float * 100 / 1" | bc
 			;;
 		"set-volume")
-			value=$(validate_value $2)
+			value=$(validate_value $3)
 			case $? in
 				0)
 					# set volume to a specific % value
-					wpctl set-volume --limit 1.0 @DEFAULT_AUDIO_SINK@ ${value}%
+					wpctl set-volume --limit 1.0 $1 ${value}%
 					;;
 				1)
 					# raise volume a relative % amount
-					wpctl set-volume --limit 1.0 @DEFAULT_AUDIO_SINK@ ${value}%+
+					wpctl set-volume --limit 1.0 $1 ${value}%+
 					;;
 				2)
 					# lower volume a relative % amount
-					wpctl set-volume @DEFAULT_AUDIO_SINK@ ${value}%-
+					wpctl set-volume $1 ${value}%-
 					;;
 				*)
 					# validation error
@@ -372,12 +372,20 @@ function audio {
 			esac
 			;;
 		"toggle-mute")
-			wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle
+			wpctl set-mute $1 toggle
 			;;
 		*)
 			echo "Error: unknown command"
 			;;
 	esac
+}
+
+function audio {
+	audio_common @DEFAULT_AUDIO_SINK@ $@
+}
+
+function audio-input {
+	audio_common @DEFAULT_AUDIO_SOURCE@ $@
 }
 
 function display {
@@ -585,12 +593,13 @@ function environment {
 SUBSYSTEM=$1
 shift
 
-if [[ "$SUBSYSTEM" == @(audio|datetime|display|system-battery|system-info|storage|ssh|environment) ]]; then
+if [[ "$SUBSYSTEM" == @(audio|audio-input|datetime|display|system-battery|system-info|storage|ssh|environment) ]]; then
 	$SUBSYSTEM $@
 else
 	echo "Error: unknown subsystem $SUBSYSTEM"
 	echo "Available subsystems:"
 	echo " - audio"
+	echo " - audio-input"
 	echo " - datetime"
 	echo " - display"
 	echo " - system-battery"
