@@ -39,6 +39,15 @@ Network configurations:
 - ./usr/lib/systemd/system/clatd-ipv6-check.service
     - A systemd service file to run the `clatd-ipv6-check` script
 
+Noise cancellation for mircophone input:
+
+- ./usr/lib/systemd/user-preset/50-playtron.preset
+    - Enable the pipewire-rnnoise.service
+- ./usr/lib/systemd/user/pipewire-rnnoise-switch.service
+    - Switch the audio input to use the RNNoise filter
+- ./usr/share/pipewire/pipewire.conf.d/pipewire-rnnoise.conf
+    - PipeWire configuration for RNNoise
+
 Factory reset:
 
 - ./usr/bin/playtron-factory-reset
