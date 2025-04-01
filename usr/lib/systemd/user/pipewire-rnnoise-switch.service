@@ -5,6 +5,7 @@ After=pipewire-rnnoise.service
 [Service]
 Type=oneshot
 ExecStart=/bin/sh -c 'wpctl set-default $(wpctl status | grep output.rnnoise_source | awk '\''{print $2}'\'' | cut -d. -f1)'
+ExecStart=/bin/systemctl --no-reload --user disable %n
 
 [Install]
 WantedBy=default.target
