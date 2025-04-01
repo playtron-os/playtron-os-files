@@ -1,2 +1,4 @@
+enable pipewire-rnnoise.service
+enable pipewire-rnnoise-switch.service
 enable playserve.service
 enable gamescope-dbus.service
