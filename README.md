@@ -41,13 +41,11 @@ Network configurations:
 
 Noise cancellation for mircophone input:
 
-- ./usr/lib/systemd/user/pipewire-rnnoise.service
-    - Service to start a noise cancellation plugin for PipeWire that relies on RNNoise
 - ./usr/lib/systemd/user-preset/50-playtron.preset
     - Enable the pipewire-rnnoise.service
 - ./usr/lib/systemd/user/pipewire-rnnoise-switch.service
     - Switch the audio input to use the RNNoise filter
-- ./usr/share/pipewire/pipewire-rnnoise.conf
+- ./usr/share/pipewire/pipewire.conf.d/pipewire-rnnoise.conf
     - PipeWire configuration for RNNoise
 
 Factory reset:
