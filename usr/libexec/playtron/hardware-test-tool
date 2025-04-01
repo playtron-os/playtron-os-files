@@ -132,6 +132,79 @@ class BatteryTest(PlaceholderTest):
         FONT.render_to(screen, (FONT_SIZE*31, FONT_SIZE*3), self.battery_charging_speed, TEXT_COLOR)
 
 
+class VolumeSetting(PlaceholderTest):
+    def __init__(self, default_output_volume, default_input_volume):
+        self.name = 'Volume|音量'
+        self.reset()
+        self.ovol = default_output_volume / 100
+        self.ivol = default_input_volume / 100
+
+    def start(self, screen, font):
+        self.reset()
+
+        self.out_minus_rect = pygame.Rect(FONT_SIZE*11, FONT_SIZE*7, FONT_SIZE*3, FONT_SIZE*3)
+        self.out_plus_rect  = pygame.Rect(FONT_SIZE*36, FONT_SIZE*7, FONT_SIZE*3, FONT_SIZE*3)
+        self.in_minus_rect  = pygame.Rect(FONT_SIZE*11, FONT_SIZE*17, FONT_SIZE*3, FONT_SIZE*3)
+        self.in_plus_rect   = pygame.Rect(FONT_SIZE*36, FONT_SIZE*17, FONT_SIZE*3, FONT_SIZE*3)
+
+        self.close_rect     = pygame.Rect(screen.get_width()-FONT_SIZE*4, FONT_SIZE, FONT_SIZE*3, FONT_SIZE*3)
+
+    def draw(self, screen, font):
+        FONT.render_to(screen,                     (FONT_SIZE*15, FONT_SIZE*5), 'Output Volume|输出音量', TEXT_COLOR)
+        # volume bar
+        pygame.draw.rect(screen, BACKGROUND_COLOR, (FONT_SIZE*15, FONT_SIZE*7, FONT_SIZE*20,           FONT_SIZE*3))
+        pygame.draw.rect(screen, PASS_COLOR,       (FONT_SIZE*15, FONT_SIZE*7, FONT_SIZE*20*self.ovol, FONT_SIZE*3))
+        pygame.draw.rect(screen, TEXT_COLOR,       (FONT_SIZE*15, FONT_SIZE*7, FONT_SIZE*20,           FONT_SIZE*3), FONT_SIZE // 6)
+        # volume value
+        FONT.render_to(screen,                     (FONT_SIZE*24, FONT_SIZE*8), str(math.ceil(self.ovol*100)), TEXT_COLOR)
+        # - volume button
+        pygame.draw.rect(screen, BUTTON_COLOR, self.out_minus_rect)
+        FONT.render_to(screen,                     (FONT_SIZE*12.35, FONT_SIZE*8.4), '-', TEXT_COLOR)
+        # + volume button
+        pygame.draw.rect(screen, BUTTON_COLOR, self.out_plus_rect)
+        FONT.render_to(screen,                     (FONT_SIZE*37.30, FONT_SIZE*8.2), '+', TEXT_COLOR)
+
+        FONT.render_to(screen,                     (FONT_SIZE*15, FONT_SIZE*15), 'Input Volume|输入音量', TEXT_COLOR)
+        # volume bar
+        pygame.draw.rect(screen, BACKGROUND_COLOR, (FONT_SIZE*15, FONT_SIZE*17, FONT_SIZE*20,           FONT_SIZE*3))
+        pygame.draw.rect(screen, PASS_COLOR,       (FONT_SIZE*15, FONT_SIZE*17, FONT_SIZE*20*self.ivol, FONT_SIZE*3))
+        pygame.draw.rect(screen, TEXT_COLOR,       (FONT_SIZE*15, FONT_SIZE*17, FONT_SIZE*20,           FONT_SIZE*3), FONT_SIZE // 6)
+        # volume value
+        FONT.render_to(screen,                     (FONT_SIZE*24, FONT_SIZE*18), str(math.ceil(self.ivol*100)), TEXT_COLOR)
+        # - volume button
+        pygame.draw.rect(screen, BUTTON_COLOR, self.in_minus_rect)
+        FONT.render_to(screen,                     (FONT_SIZE*12.35, FONT_SIZE*18.4), '-', TEXT_COLOR)
+        # + volume button
+        pygame.draw.rect(screen, BUTTON_COLOR, self.in_plus_rect)
+        FONT.render_to(screen,                     (FONT_SIZE*37.30, FONT_SIZE*18.2), '+', TEXT_COLOR)
+
+        # close button
+        pygame.draw.rect(screen, BUTTON_COLOR, self.close_rect)
+        FONT.render_to(screen, (screen.get_width()-FONT_SIZE*2.7, FONT_SIZE*2.2), 'x', TEXT_COLOR)
+
+    def event(self, event):
+        if event.type == pygame.MOUSEBUTTONUP:
+            if pygame.Rect(self.close_rect).collidepoint(event.pos):
+                self.done = True
+                self.result = "none"
+            elif pygame.Rect(self.out_minus_rect).collidepoint(event.pos):
+                self.ovol -= 0.05
+            elif pygame.Rect(self.out_plus_rect).collidepoint(event.pos):
+                self.ovol += 0.05
+            elif pygame.Rect(self.in_minus_rect).collidepoint(event.pos):
+                self.ivol -= 0.05
+            elif pygame.Rect(self.in_plus_rect).collidepoint(event.pos):
+                self.ivol += 0.05
+
+            if self.ovol < 0: self.ovol = 0.0
+            if self.ovol > 1: self.ovol = 1.0
+            os.system(f'hwctl audio set-volume {int(self.ovol*100)}')
+
+            if self.ivol < 0: self.ivol = 0.0
+            if self.ivol > 1: self.ivol = 1.0
+            os.system(f'hwctl audio-input set-volume {int(self.ivol*100)}')
+
+
 class ExitAction(PlaceholderTest):
     def __init__(self):
         self.name = 'Exit|退出'
@@ -400,7 +473,6 @@ class SpeakersTest(PlaceholderTest):
         self.start_time = None
         self.wav_file_name = '/tmp/test_record.wav'
         self.msg_headphones_hint = 'Unplug headphones|拔下耳机'
-        self.volume_level = '75'
         self.audio_output_started = False
         self.audio_input_started = False
         self.cleanup_started = False
@@ -409,12 +481,7 @@ class SpeakersTest(PlaceholderTest):
         self.reset()
         self.start_time = time.perf_counter()
 
-    def lower_volume(self):
-        # Lower the volume first so it is not at 100%.
-        os.popen('hwctl audio set-volume ' + self.volume_level)
-
     def audio_output(self):
-        self.lower_volume()
         # 5.7 seconds is the exact amount of time for the "Front right. Front left." voice line to happen twice.
         os.popen('timeout 5.7s speaker-test -c 2 -t wav')
 
@@ -423,7 +490,6 @@ class SpeakersTest(PlaceholderTest):
         subprocess.Popen('arecord -f cd -d 6 ' + self.wav_file_name, shell=True)
 
     def audio_input_playback(self):
-        self.lower_volume()
         os.popen('aplay ' + self.wav_file_name)
 
     def cleanup(self):
@@ -475,7 +541,6 @@ class HeadphonesTest(SpeakersTest):
         self.start_time = None
         self.wav_file_name = '/tmp/test_record.wav'
         self.msg_headphones_hint = 'Plug in headphones|插入耳机'
-        self.volume_level = '50'
         self.audio_output_started = False
         self.audio_input_started = False
         self.cleanup_started = False
@@ -706,6 +771,11 @@ class SerialTest(PlaceholderTest):
         font.render_to(screen, (FONT_SIZE * 2, FONT_SIZE * 2), text, TEXT_COLOR)
 
 
+
+
+DEFAULT_OUTPUT_VOLUME = 80
+DEFAULT_INPUT_VOLUME = 80
+
 @dataclass
 class Test:
     test: object
@@ -718,31 +788,32 @@ tests = [
     Test(test=WifiTest(),      rect=pygame.Rect(TILE_W*1, TILE_H*0, TILE_W, TILE_H)),
     Test(test=BluetoothTest(), rect=pygame.Rect(TILE_W*2, TILE_H*0, TILE_W, TILE_H)),
 
-    Test(test=InputTest(), rect=pygame.Rect(TILE_W*0, TILE_H*1, TILE_W, TILE_H)),
-    Test(test=PlaceholderTest(), rect=pygame.Rect(TILE_W*1, TILE_H*1, TILE_W, TILE_H)), # Hardware buttons
+    Test(test=InputTest(),   rect=pygame.Rect(TILE_W*0, TILE_H*1, TILE_W, TILE_H)),
+    Test(test=SerialTest(),  rect=pygame.Rect(TILE_W*1, TILE_H*1, TILE_W, TILE_H)),
     Test(test=BatteryTest(), rect=pygame.Rect(TILE_W*2, TILE_H*1, TILE_W, TILE_H)),
 
-    Test(test=ScreenBrightnessTest(), rect=pygame.Rect(TILE_W*0, TILE_H*2, TILE_W, TILE_H)), # Screen Brightness
-    Test(test=DisplayTest(),      rect=pygame.Rect(TILE_W*1, TILE_H*2, TILE_W, TILE_H)),
-    Test(test=PlaceholderTest(),  rect=pygame.Rect(TILE_W*2, TILE_H*2, TILE_W, TILE_H)), # Accelerometer
+    Test(test=ScreenBrightnessTest(), rect=pygame.Rect(TILE_W*0, TILE_H*2, TILE_W, TILE_H)),
+    Test(test=DisplayTest(),          rect=pygame.Rect(TILE_W*1, TILE_H*2, TILE_W, TILE_H)),
+    Test(test=MicroSDTest(),          rect=pygame.Rect(TILE_W*2, TILE_H*2, TILE_W, TILE_H)),
 
-    Test(test=PlaceholderTest(), rect=pygame.Rect(TILE_W*0, TILE_H*3, TILE_W, TILE_H)), # Gyroscope
-    Test(test=SpeakersTest(), rect=pygame.Rect(TILE_W*1, TILE_H*3, TILE_W, TILE_H)),
+    Test(test=USBTest(),        rect=pygame.Rect(TILE_W*0, TILE_H*3, TILE_W, TILE_H)),
+    Test(test=SpeakersTest(),   rect=pygame.Rect(TILE_W*1, TILE_H*3, TILE_W, TILE_H)),
     Test(test=HeadphonesTest(), rect=pygame.Rect(TILE_W*2, TILE_H*3, TILE_W, TILE_H)),
 
     Test(test=TouchscreenTest(),     rect=pygame.Rect(TILE_W*0, TILE_H*4, TILE_W, TILE_H)),
     Test(test=ExternalDisplayTest(), rect=pygame.Rect(TILE_W*1, TILE_H*4, TILE_W, TILE_H)),
-    Test(test=MicroSDTest(),         rect=pygame.Rect(TILE_W*2, TILE_H*4, TILE_W, TILE_H)),
+    Test(test=StressTest(),          rect=pygame.Rect(TILE_W*2, TILE_H*4, TILE_W, TILE_H)),
 
-    Test(test=USBTest(),         rect=pygame.Rect(TILE_W*0, TILE_H*5, TILE_W, TILE_H)),
-    Test(test=StressTest(),      rect=pygame.Rect(TILE_W*1, TILE_H*5, TILE_W, TILE_H)),
-    Test(test=PlaceholderTest(), rect=pygame.Rect(TILE_W*2, TILE_H*5, TILE_W, TILE_H)),
 
-    Test(test=SerialTest(),      rect=pygame.Rect(TILE_W*0, TILE_H*6, TILE_W, TILE_H)),
-    Test(test=ExitAction(),      rect=pygame.Rect(TILE_W*1, TILE_H*6, TILE_W, TILE_H)),
-    Test(test=PowerOffAction(),  rect=pygame.Rect(TILE_W*2, TILE_H*6, TILE_W, TILE_H)),
+    Test(test=VolumeSetting(DEFAULT_OUTPUT_VOLUME, DEFAULT_INPUT_VOLUME),
+                                rect=pygame.Rect(TILE_W*0, TILE_H*6, TILE_W, TILE_H)),
+    Test(test=ExitAction(),     rect=pygame.Rect(TILE_W*1, TILE_H*6, TILE_W, TILE_H)),
+    Test(test=PowerOffAction(), rect=pygame.Rect(TILE_W*2, TILE_H*6, TILE_W, TILE_H)),
 ]
 
+# set default volume levels
+os.system(f'hwctl audio set-volume {DEFAULT_OUTPUT_VOLUME}')
+os.system(f'hwctl audio-input set-volume {DEFAULT_INPUT_VOLUME}')
 
 active_test = None
 
