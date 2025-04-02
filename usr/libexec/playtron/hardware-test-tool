@@ -811,6 +811,9 @@ tests = [
     Test(test=PowerOffAction(), rect=pygame.Rect(TILE_W*2, TILE_H*6, TILE_W, TILE_H)),
 ]
 
+# set default input device to noise filtered virtual device
+os.system('systemctl --user start pipewire-rnnoise-switch')
+
 # set default volume levels
 os.system(f'hwctl audio set-volume {DEFAULT_OUTPUT_VOLUME}')
 os.system(f'hwctl audio-input set-volume {DEFAULT_INPUT_VOLUME}')
