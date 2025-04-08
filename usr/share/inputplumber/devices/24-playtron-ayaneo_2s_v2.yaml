@@ -18,11 +18,11 @@ matches:
   - dmi_data:
       product_name: AYANEO 2S
       sys_vendor: AYANEO
-      bios_version: "2.19_*"
+      bios_version: "[2-9].{19,[2-9][0-9]}_*"
   - dmi_data:
       product_name: GEEK 1S
       sys_vendor: AYANEO
-      bios_version: "2.19_*"
+      bios_version: "[2-9].{19,[2-9][0-9]}_*"
 
 # One or more source devices to combine into a single virtual device. The events
 # from these devices will be watched and translated according to the key map.
