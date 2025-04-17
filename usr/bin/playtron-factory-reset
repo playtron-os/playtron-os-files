@@ -66,7 +66,7 @@ if [ -f /usr/bin/bootc ]; then
 	mkdir /tmp/bootc-etc
 	podman run --rm --detach --volume /tmp/bootc-etc:/etc --name bootc-etc localhost/bootc sleep infinity
 	# Verify that the mount is working first by checking for a known configuration file.
-	if [ -f /tmp/bootc-etc/sddm.conf ]; then
+	if [ -f /tmp/bootc-etc/yum.repos.d/playtron-app-x86_64.repo ]; then
 		rm -rf /etc/*
 		rsync -aHX /tmp/bootc-etc/* /etc/
 	fi
@@ -80,7 +80,6 @@ else
 	reset_etc ssh
 	reset_etc xdg
 	rsync -aHX /usr/etc/gai.conf /etc/gai.conf
-	rsync -aHX /usr/etc/sddm.conf /etc/sddm.conf
 fi
 
 # reset playtron password
