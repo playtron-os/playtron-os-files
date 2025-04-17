@@ -53,21 +53,35 @@ function reset_etc {
 cd /
 
 # clear all package changes
-rpm-ostree reset &> /dev/null
+if [ -f /usr/bin/rpm-ostree ]; then
+	rpm-ostree reset &> /dev/null
+fi
 
 # backup network settings for potential restoration later (they are considered user files)
 rsync -aHX /etc/NetworkManager /tmp/
 
-# TODO: reset all of /etc
-# reset some key files in /etc
-reset_etc NetworkManager
-reset_etc systemd
-reset_etc sddm
-reset_etc sddm.conf.d
-reset_etc ssh
-reset_etc xdg
-rsync -aHX /usr/etc/gai.conf /etc/gai.conf
-rsync -aHX /usr/etc/sddm.conf /etc/sddm.conf
+# bootc reset all configuration files.
+if [ -f /usr/bin/bootc ]; then
+	bootc image copy-to-storage
+	mkdir /tmp/bootc-etc
+	podman run --rm --detach --volume /tmp/bootc-etc:/etc --name bootc-etc localhost/bootc sleep infinity
+	# Verify that the mount is working first by checking for a known configuration file.
+	if [ -f /tmp/bootc-etc/sddm.conf ]; then
+		rm -rf /etc/*
+		rsync -aHX /tmp/bootc-etc/* /etc/
+	fi
+# rpm-ostree reset essential configuration files.
+else
+	# reset some key files in /etc
+	reset_etc NetworkManager
+	reset_etc systemd
+	reset_etc sddm
+	reset_etc sddm.conf.d
+	reset_etc ssh
+	reset_etc xdg
+	rsync -aHX /usr/etc/gai.conf /etc/gai.conf
+	rsync -aHX /usr/etc/sddm.conf /etc/sddm.conf
+fi
 
 # reset playtron password
 echo 'playtron:playtron' | chpasswd
