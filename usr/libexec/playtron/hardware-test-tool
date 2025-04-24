@@ -773,8 +773,8 @@ class SerialTest(PlaceholderTest):
 
 
 
-DEFAULT_OUTPUT_VOLUME = 80
-DEFAULT_INPUT_VOLUME = 80
+DEFAULT_OUTPUT_VOLUME = 100
+DEFAULT_INPUT_VOLUME = 60
 
 @dataclass
 class Test:
