@@ -21,6 +21,7 @@ function system-info {
 	CPU_NAME=$(grep 'model name' /tmp/cpuinfo.txt | head -n1 | cut -d':' -f2 | sed 's/^ //')
 	CPU_PHYSICAL=$(grep 'cpu cores' /tmp/cpuinfo.txt | head -n1 | cut -d':' -f2 | tr -d ' ')
 	CPU_SPEED="$(lscpu | grep 'CPU max MHz' | cut -d':' -f2 | tr -d ' ' | cut -d'.' -f1)"
+	CPU_ARCH="$(lscpu | grep 'Architecture:' | cut -d':' -f2 | tr -d ' ')"
 
 	# Memory
 	TOTAL_RAM=$(grep MemTotal /proc/meminfo | tr -s ' ' | cut -d' ' -f2)
@@ -33,6 +34,7 @@ function system-info {
 	# GPU
 	glxinfo > /tmp/glxinfo.txt
 	GPU_NAME=$(grep 'OpenGL renderer string:' /tmp/glxinfo.txt | cut -d':' -f2 | sed 's/^ //' | sed 's/ (/\n/' | head -1)
+	GPU_VENDOR=$(grep 'OpenGL vendor string:' /tmp/glxinfo.txt | cut -d':' -f2 | tr -d ' ')
 	VRAM=$(grep "Dedicated video memory:" /tmp/glxinfo.txt | cut -d':' -f2 | sed 's/^ *//' | tr -d ' MB')
 
 	# Operating system
@@ -75,11 +77,13 @@ function system-info {
 	\"vendor\": \"$MANUFACTURER\",
 	\"model\": \"$MODEL\",
 	\"formFactor\": \"$FORM_FACTOR\",
+	\"cpuArchitecture\": \"$CPU_ARCH\",
 	\"cpuVendor\": \"$CPU_VENDOR\",
 	\"cpuName\": \"$CPU_NAME\",
 	\"cpuNumCores\": $CPU_PHYSICAL,
 	\"cpuSpeedMHZ\": $CPU_SPEED,
 	\"ramTotalMB\": $TOTAL_RAM,
+	\"gpuVendor\": \"$GPU_VENDOR\",
 	\"gpuName\": \"$GPU_NAME\",
 	\"vramMB\": $VRAM,
 	\"osName\": \"$OS_NAME\",
