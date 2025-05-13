@@ -114,6 +114,45 @@ function system-info {
 
 }
 
+function firmware {
+	fwupdmgr get-devices --json > /tmp/hwctl-devices.json
+	fwupdmgr get-updates --json > /tmp/hwctl-updates.json
+
+	jq -n '
+	  # Load both input files
+	  {
+	    "devices": input,
+	    "updates": input
+	  } as $data |
+
+	  # Create a lookup dictionary for available updates
+	  ($data.updates.Devices | map(
+	    select(.Releases) |
+	    {
+	      key: .DeviceId,
+	      value: {
+	        UpdateVersion: .Releases[0].Version,
+	      }
+	    }
+	  ) | from_entries) as $updates |
+
+	  # Now process the original devices file
+	  {
+	    "Devices": [
+	      $data.devices.Devices[] |
+	      select(.Flags and (.Flags | contains(["updatable"]))) |
+	      {
+	        DeviceId,
+	        Name,
+	        Vendor,
+	        Version,
+	        UpdateVersion: ($updates[.DeviceId].UpdateVersion // null),
+	      }
+	    ]
+	  }
+	' /tmp/hwctl-devices.json /tmp/hwctl-updates.json
+}
+
 function storage {
 
 	function days_since {
@@ -597,7 +636,7 @@ function environment {
 SUBSYSTEM=$1
 shift
 
-if [[ "$SUBSYSTEM" == @(audio|audio-input|datetime|display|system-battery|system-info|storage|ssh|environment) ]]; then
+if [[ "$SUBSYSTEM" == @(audio|audio-input|datetime|display|firmware|system-battery|system-info|storage|ssh|environment) ]]; then
 	$SUBSYSTEM $@
 else
 	echo "Error: unknown subsystem $SUBSYSTEM"
@@ -606,6 +645,7 @@ else
 	echo " - audio-input"
 	echo " - datetime"
 	echo " - display"
+	echo " - firmware"
 	echo " - system-battery"
 	echo " - system-info"
 	echo " - storage"
