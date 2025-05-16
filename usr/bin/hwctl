@@ -114,7 +114,7 @@ function system-info {
 
 }
 
-function firmware {
+function firmware-info {
 	fwupdmgr get-devices --json > /tmp/hwctl-devices.json
 	fwupdmgr get-updates --json > /tmp/hwctl-updates.json
 
@@ -151,6 +151,29 @@ function firmware {
 	    ]
 	  }
 	' /tmp/hwctl-devices.json /tmp/hwctl-updates.json
+}
+
+function firmware-update {
+	if [ -z $1 ]; then
+		echo "Please specify the device id to update"
+		exit 1
+	fi
+
+	fwupdmgr --assume-yes update $1
+}
+
+function firmware {
+	case $1 in
+		"info")
+			firmware-info
+			;;
+		"update")
+			firmware-update $2
+			;;
+		*)
+			echo "Error: unknown command"
+			;;
+	esac
 }
 
 function storage {
