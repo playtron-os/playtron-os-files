@@ -147,6 +147,7 @@ function firmware-info {
 	        Vendor,
 	        Version,
 	        UpdateVersion: ($updates[.DeviceId].UpdateVersion // null),
+	        NeedsReboot: ((.Flags // []) | contains(["needs-reboot"])),
 	      }
 	    ]
 	  }
