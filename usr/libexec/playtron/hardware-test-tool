@@ -469,39 +469,44 @@ class DisplayTest(PlaceholderTest):
 class SpeakersTest(PlaceholderTest):
     def __init__(self):
         self.name = 'Speakers|扬声器'
-        self.reset()
-        self.start_time = None
         self.wav_file_name = '/tmp/test_record.wav'
         self.msg_headphones_hint = 'Unplug headphones|拔下耳机'
+        self.reset()
+
+    def reset(self):
+        self.subprocess = None
+        self.subprocess = None
+        self.done = False
+        self.result = None
+        self.start_time = None
         self.audio_output_started = False
         self.audio_input_started = False
-        self.cleanup_started = False
 
     def start(self, screen, font):
         self.reset()
         self.start_time = time.perf_counter()
 
-    def audio_output(self):
-        # 5.7 seconds is the exact amount of time for the "Front right. Front left." voice line to happen twice.
-        os.popen('timeout 5.7s speaker-test -c 2 -t wav')
-
-    def audio_input_record(self):
-        # Record from the microphone for 6 seconds.
-        subprocess.Popen('arecord -f cd -d 6 ' + self.wav_file_name, shell=True)
-
-    def audio_input_playback(self):
-        os.popen('aplay ' + self.wav_file_name)
-
-    def cleanup(self):
+    def stop(self):
         try:
             os.remove(self.wav_file_name)
         except:
             print('File does not exist: ' + self.wav_file_name)
-        self.start_time = None
-        self.audio_output_started = False
-        self.audio_input_started = False
-        self.cleanup_started = False
-        self.done = True
+
+        if self.subprocess:
+            try:
+                self.subprocess.kill()
+            except:
+                print('Failed to kill subprocess')
+
+    def audio_output(self):
+        self.subprocess = subprocess.Popen('speaker-test --channels 2 --nloops 2 --test wav', shell=True)
+
+    def audio_input_record(self):
+        # Record from the microphone for 6 seconds.
+        self.subprocess = subprocess.Popen('arecord -f cd -d 6 ' + self.wav_file_name, shell=True)
+
+    def audio_input_playback(self):
+        self.subprocess = subprocess.Popen('aplay ' + self.wav_file_name, shell=True)
 
     def draw(self, screen, font):
         elapsed_time = time.perf_counter() - self.start_time
@@ -529,21 +534,15 @@ class SpeakersTest(PlaceholderTest):
                 self.audio_input_started = False
                 self.audio_input_playback()
         else:
-            if not self.cleanup_started:
-                self.cleanup_started = True
-                self.cleanup()
+            self.done = True
 
 
 class HeadphonesTest(SpeakersTest):
     def __init__(self):
         self.name = 'Headphones|耳机'
-        self.reset()
-        self.start_time = None
         self.wav_file_name = '/tmp/test_record.wav'
         self.msg_headphones_hint = 'Plug in headphones|插入耳机'
-        self.audio_output_started = False
-        self.audio_input_started = False
-        self.cleanup_started = False
+        self.reset()
 
 
 class TouchscreenTest(PlaceholderTest):
