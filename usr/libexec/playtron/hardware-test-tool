@@ -475,7 +475,6 @@ class SpeakersTest(PlaceholderTest):
 
     def reset(self):
         self.subprocess = None
-        self.subprocess = None
         self.done = False
         self.result = None
         self.start_time = None
