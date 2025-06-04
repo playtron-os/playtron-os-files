@@ -46,10 +46,13 @@ function system-info {
 	OS_VERSION=$VERSION_ID
 
 	# Playtron package versions
-	AUTOTEST_VERSION=$(rpm -qa | grep "^autotest-" | cut -c10- | sed 's/.[a-z].*//')
-	PLAYSERVE_VERSION=$(rpm -qa | grep "^playserve-" | cut -c11- | sed 's/.[a-z].*//')
-	GRID_VERSION=$(rpm -qa | grep "^grid-" | cut -c6- | sed 's/.[a-z].*//')
-	PLAYTRON_LABS_VERSION=$(rpm -qa | grep "^playtron-labs-" | cut -c15- | sed 's/.[a-z].*//')
+	package_file=$(mktemp)
+	rpm -qa > $package_file
+	AUTOTEST_VERSION=$(grep "^autotest-" $package_file | cut -c10- | sed 's/.[a-z].*//')
+	PLAYSERVE_VERSION=$(grep "^playserve-" $package_file | cut -c11- | sed 's/.[a-z].*//')
+	GRID_VERSION=$(grep "^grid-" $package_file | cut -c6- | sed 's/.[a-z].*//')
+	GAME_LAB_VERSION=$(grep "^game-lab-" $package_file | cut -c10- | sed 's/.[a-z].*//')
+	rm $package_file
 
 	# Storage devices
 	PRIMARY_DISK_TOTAL=$(df -h --output='size' --block-size M /home | tail -n1 | tr -d ' M')
@@ -91,7 +94,7 @@ function system-info {
 	\"autotestVersion\": \"$AUTOTEST_VERSION\",
 	\"playserveVersion\": \"$PLAYSERVE_VERSION\",
 	\"gridVersion\": \"$GRID_VERSION\",
-	\"playtronLabsVersion\": \"$PLAYTRON_LABS_VERSION\",
+	\"gameLabVersion\": \"$GAME_LAB_VERSION\",
 	\"storageDevices\": [
 		{
 			\"totalMB\": $PRIMARY_DISK_TOTAL,
