@@ -39,6 +39,13 @@ Network configurations:
 - ./usr/lib/systemd/system/clatd-ipv6-check.service
     - A systemd service file to run the `clatd-ipv6-check` script
 
+Disable Bluetooth and Wi-Fi on sleep to save power:
+
+- ./usr/lib/systemd/system-preset/50-playtron.preset
+    - Enable the sleep-rfkill.service
+- ./usr/lib/systemd/system/sleep-rfkill.service
+    - Disable Bluetooth and Wi-Fi on sleep and re-active when powered back on
+
 Noise cancellation for mircophone input:
 
 - ./usr/lib/systemd/user-preset/50-playtron.preset
