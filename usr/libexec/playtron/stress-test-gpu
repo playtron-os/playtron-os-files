@@ -4,5 +4,5 @@ trap "killall vkmark" EXIT
 
 rm -f /tmp/gpu.log
 while true; do
-	gamescope --headless -- vkmark --size 16384x16384 --run-forever &>> /tmp/gpu.log
+	gamescope --backend headless -- vkmark --size 16384x16384 --run-forever &>> /tmp/gpu.log
 done
