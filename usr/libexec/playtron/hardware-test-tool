@@ -614,7 +614,8 @@ class StressTest(PlaceholderTest):
         self.last_check = time.perf_counter()
         self.stress_time = None
 
-        os.popen('busctl set-property org.shadowblip.PowerStation /org/shadowblip/Performance/GPU/card0 org.shadowblip.GPU.Card.TDP TDP "d" 30')
+        os.popen('busctl set-property org.shadowblip.PowerStation /org/shadowblip/Performance/GPU/card0 org.shadowblip.GPU.Card.TDP Boost "d" 0')
+        os.popen('busctl set-property org.shadowblip.PowerStation /org/shadowblip/Performance/GPU/card0 org.shadowblip.GPU.Card.TDP TDP "d" 28')
 
         try:
             os.remove(CPU_LOG)
