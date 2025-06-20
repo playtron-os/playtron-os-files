@@ -87,6 +87,9 @@ if [ -n "$PRESERVE_USER_FILES" ]; then
 else
 	# not preserving user files, delete home directory contents
 	rm -rf /home/playtron/{,.}*
+	if ! bootc status --format json | jq .status.booted.image.image.image | grep -P "^\"ghcr.io/playtron-os/playtron-os"; then
+		bootc switch ghcr.io/playtron-os/playtron-os:latest
+	fi
 fi
 
 echo "Syncing filesystem..."
