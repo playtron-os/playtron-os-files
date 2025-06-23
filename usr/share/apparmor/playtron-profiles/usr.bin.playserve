@@ -1,0 +1,13 @@
+#include <tunables/global>
+
+# Apply the proofile to the Playserve binary and configure it to load on existing processes.
+profile /usr/bin/playserve flags=(attach_disconnected) {
+  #include <abstractions/base>
+
+  # Allow read access.
+  /dev/tpm0 r,
+  /dev/tpmrm0 r,
+
+  # Deny all other programs any access to the TPM.
+  deny /** rwklx,
+}
