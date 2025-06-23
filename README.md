@@ -7,6 +7,11 @@ Hardware control:
 - ./usr/bin/hwctl
     - A Bash script to manage audio, battery, display, storage, and system information
 
+Mandatory access control (MAC):
+
+- ./usr/share/apparmor/playtron-profiles/usr.bin.playserve
+    - An AppArmor profile to limit access to the hardware.
+
 Open file and memory mapping limits:
 
 - ./etc/security/limits.d/50-playtron.conf
