@@ -54,6 +54,12 @@ cd /
 
 # clear all package changes
 rpm-ostree reset &> /dev/null
+# ensure that a local container is not being used
+if ! bootc status --format json | jq .status.booted.image.image.image | grep -P "^\"ghcr.io/playtron-os/playtron-os"; then
+	if bootc status --format json | jq .status.rollback.image.image.image | grep -P "^\"ghcr.io/playtron-os/playtron-os"; then
+		bootc rollback
+	fi
+fi
 
 # backup network settings for potential restoration later (they are considered user files)
 rsync -aHX /etc/NetworkManager /tmp/
