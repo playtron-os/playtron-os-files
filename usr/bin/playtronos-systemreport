@@ -4,9 +4,66 @@
 # Generates a system report archive which can contain useful information for
 # reporting bugs and troubleshooting.
 
+# Default output path
+DEFAULT_OUTPUT_DIR="/tmp"
+OUTPUT_PATH=""
+
+# Function to show usage
+show_usage() {
+  echo "Usage: $(basename "$0") [OPTIONS]"
+  echo ""
+  echo "Generates a system report archive for troubleshooting and bug reporting."
+  echo ""
+  echo "OPTIONS:"
+  echo "  -o, --out PATH    Specify output file path (relative or absolute) including filename"
+  echo "                    (default: /tmp/report-YYYY-MM-DD-timestamp.tar.gz)"
+  echo "  -h, --help        Show this help message"
+  echo ""
+  echo "Examples:"
+  echo "  $(basename "$0")                           # Default: /tmp/report-YYYY-MM-DD-timestamp.tar.gz"
+  echo "  $(basename "$0") -o /home/user/report.tgz  # Absolute: /home/user/report.tgz"
+  echo ""
+  echo "Note: This script must be run as root."
+}
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    -o|--out)
+      OUTPUT_PATH="$2"
+      shift 2
+      ;;
+    -h|--help)
+      show_usage
+      exit 0
+      ;;
+    *)
+      echo "Error: Unknown option '$1'"
+      show_usage
+      exit 1
+      ;;
+  esac
+done
+
 if [ $EUID -ne 0 ]; then
   echo "$(basename "$0") must be run as root"
   exit 1
+fi
+
+# Validate output path if specified
+if [ -n "$OUTPUT_PATH" ]; then
+  # Check if path is relative
+  if [[ "$OUTPUT_PATH" != /* ]]; then
+    echo "Error: Output path must be absolute"
+    exit 1
+  fi
+
+  OUTPUT_DIR=$(dirname "$OUTPUT_PATH")
+
+  if [ ! -d "$OUTPUT_DIR" ]; then
+    echo "Error: Output directory '$OUTPUT_DIR' does not exist"
+    exit 1
+  fi
 fi
 
 ENDCOLOR='\e[0m'
@@ -123,9 +180,17 @@ echo -e "  Collecting ${RED}network${ENDCOLOR} report..."
 echo ""
 echo -e "${CYAN}Building report archive${ENDCOLOR}"
 cd "${REPORT_DIR_BASE}" && tar cvfz "${REPORT_NAME}.tar.gz" "${REPORT_NAME}"
-mv "${REPORT_DIR}.tar.gz" "/tmp/${REPORT_NAME}.tar.gz"
-chown ${TARGET_USER}: "/tmp/${REPORT_NAME}.tar.gz"
+
+# Determine final output path
+if [ -n "$OUTPUT_PATH" ]; then
+  FINAL_OUTPUT_PATH="$OUTPUT_PATH"
+else
+  FINAL_OUTPUT_PATH="/tmp/${REPORT_NAME}.tar.gz"
+fi
+
+mv "${REPORT_NAME}.tar.gz" "$FINAL_OUTPUT_PATH"
+chown ${TARGET_USER}: "$FINAL_OUTPUT_PATH"
 rm -rf "${REPORT_DIR_BASE}"
 
 echo ""
-echo -e "Saved system report to: ${PURPLE}/tmp/${REPORT_NAME}.tar.gz${ENDCOLOR}"
+echo -e "Saved system report to: ${PURPLE}${FINAL_OUTPUT_PATH}${ENDCOLOR}"
