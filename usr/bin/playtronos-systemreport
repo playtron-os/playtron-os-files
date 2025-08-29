@@ -4,8 +4,6 @@
 # Generates a system report archive which can contain useful information for
 # reporting bugs and troubleshooting.
 
-OUTPUT_PATH=""
-
 # Function to show usage
 show_usage() {
   echo "Usage: $(basename "$0") [OPTIONS]"
@@ -23,6 +21,21 @@ show_usage() {
   echo ""
   echo "Note: This script must be run as root."
 }
+
+
+ENDCOLOR='\e[0m'
+RED='\e[0;31m'
+PURPLE='\e[0;35m'
+CYAN='\e[0;36m'
+
+TARGET_USER=playtron
+TARGET_UID=$(id -u "${TARGET_USER}")
+REPORT_NAME="report-$(date +%Y-%m-%d-%s)"
+REPORT_DIR_BASE="$(mktemp -d)"
+REPORT_DIR="${REPORT_DIR_BASE}/${REPORT_NAME}"
+mkdir -p "${REPORT_DIR}"
+
+OUTPUT_PATH="/tmp/${REPORT_NAME}.tar.gz"
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -49,32 +62,18 @@ if [ $EUID -ne 0 ]; then
 fi
 
 # Validate output path if specified
-if [ -n "$OUTPUT_PATH" ]; then
-  # Check if path is relative
-  if [[ "$OUTPUT_PATH" != /* ]]; then
-    echo "Error: Output path must be absolute"
-    exit 1
-  fi
-
-  OUTPUT_DIR=$(dirname "$OUTPUT_PATH")
-
-  if [ ! -d "$OUTPUT_DIR" ]; then
-    echo "Error: Output directory '$OUTPUT_DIR' does not exist"
-    exit 1
-  fi
+# Check if path is relative
+if [[ "$OUTPUT_PATH" != /* ]]; then
+  echo "Error: Output path must be absolute"
+  exit 1
 fi
 
-ENDCOLOR='\e[0m'
-RED='\e[0;31m'
-PURPLE='\e[0;35m'
-CYAN='\e[0;36m'
+OUTPUT_DIR=$(dirname "$OUTPUT_PATH")
 
-TARGET_USER=playtron
-TARGET_UID=$(id -u "${TARGET_USER}")
-REPORT_NAME="report-$(date +%Y-%m-%d-%s)"
-REPORT_DIR_BASE="$(mktemp -d)"
-REPORT_DIR="${REPORT_DIR_BASE}/${REPORT_NAME}"
-mkdir -p "${REPORT_DIR}"
+if [ ! -d "$OUTPUT_DIR" ]; then
+  echo "Error: Output directory '$OUTPUT_DIR' does not exist"
+  exit 1
+fi
 
 echo -e "${CYAN}Generating system report...${ENDCOLOR}"
 
@@ -179,16 +178,10 @@ echo ""
 echo -e "${CYAN}Building report archive${ENDCOLOR}"
 cd "${REPORT_DIR_BASE}" && tar cvfz "${REPORT_NAME}.tar.gz" "${REPORT_NAME}"
 
-# Determine final output path
-if [ -n "$OUTPUT_PATH" ]; then
-  FINAL_OUTPUT_PATH="$OUTPUT_PATH"
-else
-  FINAL_OUTPUT_PATH="/tmp/${REPORT_NAME}.tar.gz"
-fi
 
-mv "${REPORT_NAME}.tar.gz" "$FINAL_OUTPUT_PATH"
-chown ${TARGET_USER}: "$FINAL_OUTPUT_PATH"
+mv "${REPORT_NAME}.tar.gz" "$OUTPUT_PATH"
+chown ${TARGET_USER}: "$OUTPUT_PATH"
 rm -rf "${REPORT_DIR_BASE}"
 
 echo ""
-echo -e "Saved system report to: ${PURPLE}${FINAL_OUTPUT_PATH}${ENDCOLOR}"
+echo -e "Saved system report to: ${PURPLE}${OUTPUT_PATH}${ENDCOLOR}"
