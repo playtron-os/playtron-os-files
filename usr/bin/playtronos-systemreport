@@ -4,8 +4,6 @@
 # Generates a system report archive which can contain useful information for
 # reporting bugs and troubleshooting.
 
-# Default output path
-DEFAULT_OUTPUT_DIR="/tmp"
 OUTPUT_PATH=""
 
 # Function to show usage
